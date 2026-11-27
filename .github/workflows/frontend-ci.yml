@@ -1,0 +1,30 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_USE_MOCK: 'false'
+          VITE_REST_API_URL: https://rest.example.invalid/prod
+          VITE_WS_URL: wss://ws.example.invalid/prod
+          VITE_COGNITO_USER_POOL_ID: ap-southeast-1_CiTestPool
+          VITE_COGNITO_CLIENT_ID: citestclient
