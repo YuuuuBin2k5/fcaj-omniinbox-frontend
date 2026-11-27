@@ -107,9 +107,36 @@ export default function SimulatorView({ onOpenInbox }) {
 
   useEffect(() => {
     let active = true;
-    function receiveReplies(id, messages) {
+    function hydrateMessages(id, messages) {
+      if (!active || !Array.isArray(messages) || !messages.length) return;
       const outgoing = messages.filter((message) => message.direction === "OUTBOUND");
-      if (!active || !outgoing.length) return;
+      const inbound = messages.filter((message) => message.direction === "INBOUND");
+
+      if (inbound.length) {
+        setSentByConv((prev) => {
+          const cur = prev[id] || [];
+          const next = [...cur];
+          for (const m of inbound) {
+            const dedupId = `${m.senderId}#${m.channelMessageId}`;
+            const mapped = {
+              messageId: m.messageId || `SIM_SENT_${dedupId}`,
+              dedupId,
+              direction: "CUSTOMER",
+              senderName: m.senderName,
+              content: m.content,
+              createdAt: m.createdAt,
+            };
+            const existingIdx = next.findIndex(
+              (item) => item.messageId === mapped.messageId || (mapped.dedupId && item.dedupId === mapped.dedupId)
+            );
+            if (existingIdx >= 0) next[existingIdx] = mapped;
+            else next.push(mapped);
+          }
+          return { ...prev, [id]: next };
+        });
+      }
+
+      if (!outgoing.length) return;
       setRepliesByConv((prev) => ({ ...prev, [id]: mergeMessageList(prev[id], outgoing) }));
       if (id === currentConvRef.current && outgoing.some((message) => message.status === "SENT")) {
         setMilestoneStep(3);
@@ -129,17 +156,19 @@ export default function SimulatorView({ onOpenInbox }) {
         }
       }
     }
+
     const rt = connectRealtime({
+      clientType: "simulator",
       onStatus: setWsStatus,
       onEvent: (evt) => {
         if (evt.event === "OUTBOUND_MESSAGE" && evt.message?.conversationId) {
-          receiveReplies(evt.message.conversationId, [evt.message]);
+          hydrateMessages(evt.message.conversationId, [evt.message]);
         }
       },
       onResync: () => {
         const id = currentConvRef.current;
         listMessages(id, { limit: 50 })
-          .then((result) => receiveReplies(id, result.messages || []))
+          .then((result) => hydrateMessages(id, result.messages || []))
           .catch(() => {});
       },
     });
@@ -148,6 +177,50 @@ export default function SimulatorView({ onOpenInbox }) {
       rt.close();
     };
   }, []);
+
+  // Tự nạp lịch sử hội thoại khi chuyển preset hoặc đổi customerId trên Simulator
+  useEffect(() => {
+    let active = true;
+    listMessages(currentConvId, { limit: 50 })
+      .then((result) => {
+        if (!active || !Array.isArray(result?.messages) || !result.messages.length) return;
+        const outgoing = result.messages.filter((m) => m.direction === "OUTBOUND");
+        const inbound = result.messages.filter((m) => m.direction === "INBOUND");
+        if (inbound.length) {
+          setSentByConv((prev) => {
+            const cur = prev[currentConvId] || [];
+            const next = [...cur];
+            for (const m of inbound) {
+              const dedupId = `${m.senderId}#${m.channelMessageId}`;
+              const mapped = {
+                messageId: m.messageId || `SIM_SENT_${dedupId}`,
+                dedupId,
+                direction: "CUSTOMER",
+                senderName: m.senderName,
+                content: m.content,
+                createdAt: m.createdAt,
+              };
+              const idx = next.findIndex(
+                (item) => item.messageId === mapped.messageId || (mapped.dedupId && item.dedupId === mapped.dedupId)
+              );
+              if (idx >= 0) next[idx] = mapped;
+              else next.push(mapped);
+            }
+            return { ...prev, [currentConvId]: next };
+          });
+        }
+        if (outgoing.length) {
+          setRepliesByConv((prev) => ({
+            ...prev,
+            [currentConvId]: mergeMessageList(prev[currentConvId], outgoing),
+          }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [currentConvId]);
 
   const replies = repliesByConv[currentConvId] || [];
   const sentMsgs = sentByConv[currentConvId] || [];

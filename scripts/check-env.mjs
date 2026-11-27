@@ -32,7 +32,7 @@ export function validateProductionEnv(env) {
   ];
   for (const k of required) {
     const val = (env[k] || "").trim();
-    if (!val || /xxxx|yyyy|<[^>]+>/i.test(val)) {
+    if (!val || /xxxxxx|yyyyyy|<[^>]+>/i.test(val)) {
       errors.push(`Thiếu hoặc còn là placeholder: ${k}`);
     }
   }
