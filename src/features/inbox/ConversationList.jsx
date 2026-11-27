@@ -1,7 +1,7 @@
 // FILE: src/features/inbox/ConversationList.jsx
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { CheckCircle2, RefreshCw, Search, SlidersHorizontal, UserCheck, X } from "lucide-react";
+import { CheckCircle2, RefreshCw, RotateCcw, Search, SlidersHorizontal, UserCheck, X } from "lucide-react";
 import { ChannelBadge, ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
 import { formatAgentShort, formatRelativeTime, splitHighlight } from "../../services/uiFormat.js";
 
@@ -71,6 +71,7 @@ export default function ConversationList({
   channel,
   status,
   queueScope = "all",
+  unreadOnly = false,
   currentAgent = "",
   realtime,
   nextToken,
@@ -80,6 +81,7 @@ export default function ConversationList({
   draftsByConv = {},
   searchInputRef,
   onToggleQaTools,
+  onToggleUnreadOnly,
   onRefresh,
   onChannelChange,
   onStatusChange,
@@ -87,6 +89,7 @@ export default function ConversationList({
   onResetFilters,
   onQuickAssign,
   onQuickResolve,
+  onQuickReopen,
   onSelect,
   onLoadMore,
 }) {
@@ -114,7 +117,10 @@ export default function ConversationList({
       )
     : filteredList;
 
-  const hasActiveFilters = Boolean(trimmedSearch || channel !== "all" || status !== "all" || queueScope !== "all");
+  const hasActiveFilters = Boolean(
+    trimmedSearch || channel !== "all" || status !== "all" || queueScope !== "all" || unreadOnly
+  );
+  const unreadConvCount = allConversations.filter((c) => Number(c.unreadCount) > 0).length;
 
   const statusCounts = {
     all: allConversations.length,
@@ -133,12 +139,29 @@ export default function ConversationList({
     <div className="flex h-full flex-col bg-white dark:bg-[#111114]">
       {/* Single Compact Column Header */}
       <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-3 dark:border-white/[0.08]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <h2 className="text-sm font-bold tracking-tight text-zinc-950 dark:text-white">Hộp thư</h2>
           <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
             {allConversations.length}
           </span>
-          <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold ${rt.text}`}>
+          {onToggleUnreadOnly && (
+            <button
+              type="button"
+              aria-pressed={unreadOnly}
+              disabled={!unreadOnly && unreadConvCount === 0}
+              onClick={onToggleUnreadOnly}
+              title="Lọc nhanh hội thoại chưa đọc"
+              className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold transition disabled:opacity-45 ${
+                unreadOnly
+                  ? "border-rose-500/45 bg-rose-500 text-white"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-400 dark:border-white/12 dark:bg-[#18181C] dark:text-zinc-300"
+              }`}
+            >
+              <span>Chưa đọc</span>
+              <span className="tabular-nums">{unreadConvCount}</span>
+            </button>
+          )}
+          <span className={`inline-flex items-center gap-1 font-mono text-[10px] font-semibold ${rt.text}`}>
             <span className={`h-1.5 w-1.5 rounded-full ${rt.dot}`} />
             {rt.label}
           </span>
@@ -418,7 +441,7 @@ export default function ConversationList({
                               <UserCheck className="h-3 w-3" />
                             </button>
                           )}
-                          {canQuickResolve && (
+                          {canQuickResolve ? (
                             <button
                               type="button"
                               aria-label={`Hoàn tất ${c.customerName}`}
@@ -431,6 +454,21 @@ export default function ConversationList({
                             >
                               <CheckCircle2 className="h-3 w-3" />
                             </button>
+                          ) : (
+                            onQuickReopen && (
+                              <button
+                                type="button"
+                                aria-label={`Mở lại ${c.customerName}`}
+                                title="Mở lại hội thoại (E)"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onQuickReopen(c);
+                                }}
+                                className="flex h-5 w-5 items-center justify-center rounded-md border border-zinc-200 bg-white text-sky-600 shadow-xs hover:border-sky-400 dark:border-white/15 dark:bg-[#1C1C22] dark:text-sky-400"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </button>
+                            )
                           )}
                         </div>
                       </div>

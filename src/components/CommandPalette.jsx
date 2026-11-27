@@ -1,9 +1,23 @@
 // FILE: src/components/CommandPalette.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { FlaskConical, Home, Inbox, Moon, Search, Sparkles, Sun, Terminal } from "lucide-react";
+import { FlaskConical, Home, Inbox, Keyboard, Moon, Search, Sparkles, Sun, Terminal } from "lucide-react";
 import { USE_MOCK } from "../services/auth.js";
+import { splitHighlight } from "../services/uiFormat.js";
 import { ChannelIcon, StatusIcon } from "./ChannelBadge.jsx";
+
+function HighlightSpan({ text, query }) {
+  if (!query) return text;
+  return splitHighlight(text, query).map((part, i) =>
+    part.match ? (
+      <mark key={i} className="rounded bg-amber-300/50 px-0.5 text-inherit dark:bg-amber-400/30">
+        {part.text}
+      </mark>
+    ) : (
+      <span key={i}>{part.text}</span>
+    )
+  );
+}
 
 export default function CommandPalette({
   open,
@@ -13,6 +27,7 @@ export default function CommandPalette({
   onToggleTheme,
   onNavigate,
   onSelectConversation,
+  onOpenShortcuts,
   onSeedSameName,
   onSeedPagination,
 }) {
@@ -62,6 +77,18 @@ export default function CommandPalette({
         icon: theme === "dark" ? Sun : Moon,
         run: () => onToggleTheme(),
       },
+      ...(onOpenShortcuts
+        ? [
+            {
+              id: "open-shortcuts",
+              group: "Giao diện",
+              label: "Mở bảng phím tắt (?)",
+              hint: "Shortcuts",
+              icon: Keyboard,
+              run: () => onOpenShortcuts(),
+            },
+          ]
+        : []),
     ];
 
     if (USE_MOCK) {
@@ -117,7 +144,7 @@ export default function CommandPalette({
           it.group.toLowerCase().includes(q)
       )
       .slice(0, 14);
-  }, [query, conversations, theme, onNavigate, onToggleTheme, onSelectConversation, onSeedSameName, onSeedPagination]);
+  }, [query, conversations, theme, onNavigate, onToggleTheme, onSelectConversation, onOpenShortcuts, onSeedSameName, onSeedPagination]);
 
   useEffect(() => {
     const el = itemRefs.current[activeIndex];
@@ -222,10 +249,12 @@ export default function CommandPalette({
                             <Icon className="h-4 w-4 shrink-0 opacity-75" />
                           )}
                           <div className="min-w-0">
-                            <div className="truncate font-medium">{item.label}</div>
+                            <div className="truncate font-medium">
+                              <HighlightSpan text={item.label} query={query} />
+                            </div>
                             {item.sub && (
                               <div className={`truncate font-mono text-[10px] ${active ? "text-zinc-300" : "text-zinc-400"}`}>
-                                {item.sub}
+                                <HighlightSpan text={item.sub} query={query} />
                               </div>
                             )}
                           </div>

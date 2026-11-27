@@ -7,6 +7,14 @@
       name="description"
       content="OmniInbox — Hộp thư CSKH hợp nhất đa kênh trên AWS Serverless (Telegram thật hai chiều, Shopee/Zalo/WebChat mô phỏng)."
     />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("omni_ui_theme");
+          document.documentElement.classList.toggle("dark", t !== "light");
+        } catch (e) {}
+      })();
+    </script>
     <link
       rel="icon"
       type="image/svg+xml"
@@ -20,7 +28,7 @@
     />
     <title>OmniInbox – Unified Customer Support Platform</title>
   </head>
-  <body class="bg-[#FAFAFA] text-zinc-900 antialiased dark:bg-[#09090B] dark:text-zinc-100">
+  <body class="bg-[#F6F7F9] text-zinc-900 antialiased dark:bg-[#09090B] dark:text-zinc-100">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

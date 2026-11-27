@@ -5,11 +5,13 @@ import { ArrowRight, CheckCircle2, Command, Moon, Sun, Zap } from "lucide-react"
 import BrandLogo from "../../components/BrandLogo.jsx";
 import { ChannelIcon } from "../../components/ChannelBadge.jsx";
 import InteractivePipelineHero from "./InteractivePipelineHero.jsx";
+import ChaosToCalmSlider from "./ChaosToCalmSlider.jsx";
 import InteractiveFeatureCards from "./InteractiveFeatureCards.jsx";
 import { USE_MOCK } from "../../services/auth.js";
 
 const NAV_SECTIONS = [
   { id: "preview", label: "Sandbox" },
+  { id: "compare", label: "So sánh" },
   { id: "mechanics", label: "Cơ chế" },
   { id: "launch", label: "Bắt đầu" },
 ];
@@ -273,12 +275,29 @@ export default function LandingPage({
           <InteractivePipelineHero />
         </section>
 
-        {/* Section 02: Touch-to-Understand Visual Mechanics */}
+        {/* Section 02: Tactile Before/After Comparison Slider */}
+        <section id="compare" className="mt-12 scroll-mt-24">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                02 / Before ↔ After
+              </div>
+              <h2 className="mt-1 text-xl font-bold tracking-tight text-zinc-950 sm:text-2xl dark:text-white">
+                Kéo để so sánh: 4 App rời vs 1 Hộp thư
+              </h2>
+            </div>
+            <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">Interactive Comparison</span>
+          </div>
+
+          <ChaosToCalmSlider />
+        </section>
+
+        {/* Section 03: Touch-to-Understand Visual Mechanics */}
         <section id="mechanics" className="mt-12 scroll-mt-24">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
             <div>
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                02 / Core Mechanics
+                03 / Core Mechanics
               </div>
               <h2 className="mt-1 text-xl font-bold tracking-tight text-zinc-950 sm:text-2xl dark:text-white">
                 Chạm để xem hệ thống bảo vệ từng tin nhắn

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { AlertTriangle, Check, CheckCheck, Copy, RotateCcw } from "lucide-react";
 import { ChannelIcon } from "../../components/ChannelBadge.jsx";
-import { formatAgentShort } from "../../services/uiFormat.js";
+import { formatAgentShort, splitHighlight } from "../../services/uiFormat.js";
 
 const SIMULATED = new Set(["shopee", "zalo", "webchat"]);
 
@@ -17,7 +17,34 @@ function senderInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function MessageBubble({ msg, isGroupStart = true, isGroupEnd = true, isRetrying, onRetry }) {
+function HighlightBody({ content, query, outbound }) {
+  if (!query || !query.trim()) return content;
+  return splitHighlight(content, query).map((part, idx) =>
+    part.match ? (
+      <mark
+        key={idx}
+        className={`rounded px-0.5 ${
+          outbound
+            ? "bg-amber-300 text-zinc-950"
+            : "bg-amber-300/65 text-zinc-950 dark:bg-amber-400/35 dark:text-white"
+        }`}
+      >
+        {part.text}
+      </mark>
+    ) : (
+      <span key={idx}>{part.text}</span>
+    )
+  );
+}
+
+export default function MessageBubble({
+  msg,
+  isGroupStart = true,
+  isGroupEnd = true,
+  highlightQuery = "",
+  isRetrying,
+  onRetry,
+}) {
   const [copied, setCopied] = useState(false);
   const out = msg.direction === "OUTBOUND";
   const failed = out && msg.status === "FAILED";
@@ -100,7 +127,9 @@ export default function MessageBubble({ msg, isGroupStart = true, isGroupEnd = t
           </div>
         )}
 
-        <div className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
+        <div className="whitespace-pre-wrap break-words leading-relaxed">
+          <HighlightBody content={msg.content} query={highlightQuery} outbound={out} />
+        </div>
 
         {(out || (isGroupEnd && SIMULATED.has(msg.channel))) && (
           <div

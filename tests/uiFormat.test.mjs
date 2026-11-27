@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  clampSidebarWidth,
+  countMessageMatches,
   evaluatePasswordRules,
   filterLocalMacros,
   formatAgentShort,
@@ -81,4 +83,22 @@ test("filterLocalMacros lọc chính xác theo lệnh / và trả toàn bộ khi
     ["/chao"]
   );
   assert.equal(filterLocalMacros(macros, "/khongco").length, 0);
+});
+
+test("clampSidebarWidth giới hạn an toàn 336..480 và trả 392 khi giá trị lỗi", () => {
+  assert.equal(clampSidebarWidth(410), 410);
+  assert.equal(clampSidebarWidth(200), 336);
+  assert.equal(clampSidebarWidth(600), 480);
+  assert.equal(clampSidebarWidth("invalid"), 392);
+});
+
+test("countMessageMatches đếm đúng số tin chứa từ khóa không phân biệt hoa thường", () => {
+  const sample = [
+    { content: "Áo khoác còn size L không shop?" },
+    { content: "Dạ còn SIZE L màu đen ạ" },
+    { content: "Cảm ơn bạn" },
+  ];
+  assert.equal(countMessageMatches(sample, ""), 0);
+  assert.equal(countMessageMatches(sample, "size l"), 2);
+  assert.equal(countMessageMatches(sample, "shopee"), 0);
 });

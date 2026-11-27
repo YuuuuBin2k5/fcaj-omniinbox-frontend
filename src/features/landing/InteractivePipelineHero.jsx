@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Code2, Play, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
-import { ChannelBadge, ChannelIcon, StatusDot } from "../../components/ChannelBadge.jsx";
+import { ChannelBadge, StatusDot } from "../../components/ChannelBadge.jsx";
 import JsonCodeBlock from "../../components/JsonCodeBlock.jsx";
 
 const SCENARIOS = [
@@ -200,13 +200,6 @@ const SCENARIOS = [
   },
 ];
 
-const CONVERGENCE_CHANNELS = [
-  { id: "telegram", label: "Telegram · Thật", color: "#38BDF8", y: 18 },
-  { id: "shopee", label: "Shopee · Mô phỏng", color: "#FB923C", y: 42 },
-  { id: "zalo", label: "Zalo · Mô phỏng", color: "#60A5FA", y: 66 },
-  { id: "webchat", label: "WebChat · Mô phỏng", color: "#A78BFA", y: 90 },
-];
-
 const TOPOLOGY_NODES = [
   { id: 0, code: "01", name: "API Gateway", sub: "REST + Secret" },
   { id: 1, code: "02", name: "SQS Queue", sub: "Buffer + DLQ" },
@@ -394,7 +387,6 @@ export default function InteractivePipelineHero() {
   const sc = SCENARIOS.find((s) => s.id === activeScenario) || SCENARIOS[0];
   const currentHop = stepIdx >= 0 ? sc.hops[stepIdx] : sc.hops[0];
   const inspectedConv = convs.find((c) => c.id === selectedConvId) || convs[0];
-  const activeChannel = stepIdx >= 0 ? sc.sourceChannel : null;
 
   return (
     <div className="sandbox-rim elevated-sheet relative rounded-2xl border border-zinc-200/90 bg-white/95 p-3.5 glass-panel sm:p-5 dark:border-white/[0.1] dark:bg-[#111114]/95">
@@ -484,62 +476,8 @@ export default function InteractivePipelineHero() {
         </div>
       </div>
 
-      {/* SVG Bézier 4-Channel Convergence Strip */}
-      <div className="mt-4 hidden items-center gap-3 rounded-xl border border-zinc-200/80 bg-[#F8F8FA] px-3 py-2 md:grid md:grid-cols-12 dark:border-white/[0.07] dark:bg-[#09090B]">
-        <div className="col-span-5 grid grid-cols-2 gap-1.5">
-          {CONVERGENCE_CHANNELS.map((ch) => {
-            const isActive = activeChannel === ch.id;
-            return (
-              <div
-                key={ch.id}
-                className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-medium transition ${
-                  isActive
-                    ? "border-zinc-900 bg-white text-zinc-950 shadow-xs dark:border-white/40 dark:bg-white/10 dark:text-white"
-                    : "border-zinc-200/80 bg-white/70 text-zinc-600 dark:border-white/[0.06] dark:bg-[#111114] dark:text-zinc-400"
-                }`}
-              >
-                <ChannelIcon channel={ch.id} className="h-3 w-3 shrink-0" />
-                <span className="truncate">{ch.label}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="col-span-4 flex items-center" aria-hidden="true">
-          <svg viewBox="0 0 240 108" className="h-16 w-full">
-            {CONVERGENCE_CHANNELS.map((ch) => {
-              const isActive = activeChannel === ch.id;
-              return (
-                <path
-                  key={ch.id}
-                  d={`M 4 ${ch.y} C 95 ${ch.y}, 135 54, 232 54`}
-                  fill="none"
-                  stroke={isActive ? ch.color : "rgba(161,161,170,0.28)"}
-                  strokeWidth={isActive ? "2.4" : "1.25"}
-                  className={isActive ? "pipeline-dash" : ""}
-                />
-              );
-            })}
-            <circle
-              cx="232"
-              cy="54"
-              r="4.5"
-              fill={activeChannel ? "#38BDF8" : "rgba(161,161,170,0.45)"}
-            />
-          </svg>
-        </div>
-
-        <div className="col-span-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left dark:border-white/10 dark:bg-[#111114]">
-          <div className="font-mono text-[9px] uppercase tracking-wider text-zinc-400">Hội tụ tại</div>
-          <div className="mt-0.5 font-mono text-xs font-semibold text-zinc-900 dark:text-white">
-            API GW → SQS → Portal
-          </div>
-          <div className="mt-0.5 text-[10px] text-zinc-500">Chuẩn hóa chung 1 schema DynamoDB</div>
-        </div>
-      </div>
-
       {/* Horizontal Topology Conduit Graph (4 Nodes connected by live SVG rails) */}
-      <div className="mt-3 grid grid-cols-2 items-center gap-2 sm:grid-cols-7">
+      <div className="mt-4 grid grid-cols-2 items-center gap-2 sm:grid-cols-7">
         {TOPOLOGY_NODES.map((node, idx) => {
           const done = stepIdx > idx || (stepIdx === idx && !running);
           const current = stepIdx === idx && running;

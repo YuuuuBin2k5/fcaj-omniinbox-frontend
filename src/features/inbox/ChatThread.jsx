@@ -22,6 +22,7 @@ export default function ChatThread({
   messages,
   loading = false,
   pendingOutgoing = null,
+  searchQuery = "",
   hasOlder,
   retryingMessageId,
   onLoadOlder,
@@ -167,6 +168,7 @@ export default function ChatThread({
                 msg={item.msg}
                 isGroupStart={item.isGroupStart}
                 isGroupEnd={item.isGroupEnd}
+                highlightQuery={searchQuery}
                 isRetrying={retryingMessageId === item.msg.messageId}
                 onRetry={onRetry}
               />

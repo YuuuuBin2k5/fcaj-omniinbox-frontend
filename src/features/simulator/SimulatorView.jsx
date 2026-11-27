@@ -84,6 +84,8 @@ export default function SimulatorView({ onOpenInbox }) {
   const [consoleTab, setConsoleTab] = useState("log");
   const [copiedMsgId, setCopiedMsgId] = useState(false);
   const [clockTime, setClockTime] = useState(formatClock);
+  const [roundTripByConv, setRoundTripByConv] = useState({});
+  const lastSentAtRef = useRef({});
 
   useEffect(() => {
     const id = setInterval(() => setClockTime(formatClock()), 30_000);
@@ -112,6 +114,19 @@ export default function SimulatorView({ onOpenInbox }) {
       if (id === currentConvRef.current && outgoing.some((message) => message.status === "SENT")) {
         setMilestoneStep(3);
         setMilestone("Mốc 3: Đã nhận phản hồi từ Agent Portal!");
+      }
+      if (outgoing.some((message) => message.status === "SENT")) {
+        const sentMs = lastSentAtRef.current[id];
+        if (sentMs) {
+          const elapsed = Date.now() - sentMs;
+          if (elapsed >= 0 && elapsed < 300_000) {
+            setRoundTripByConv((prev) => ({
+              ...prev,
+              [id]: (elapsed / 1000).toFixed(1),
+            }));
+          }
+          delete lastSentAtRef.current[id];
+        }
       }
     }
     const rt = connectRealtime({
@@ -179,6 +194,7 @@ export default function SimulatorView({ onOpenInbox }) {
 
       if (recordInPhone && !payloadSnapshot.forceError) {
         const targetConv = `CONV#${channel}#${payloadSnapshot.customerId}`;
+        lastSentAtRef.current[targetConv] = payloadSnapshot.sentAtMs;
         setSentByConv((prev) => {
           const list = prev[targetConv] || [];
           const dedupId = `${payloadSnapshot.customerId}#${payloadSnapshot.externalMessageId}`;
@@ -320,21 +336,30 @@ export default function SimulatorView({ onOpenInbox }) {
               { ch: "shopee", id: "shopee_a2", name: "Nguyễn Văn A", label: "Shopee A2" },
               { ch: "zalo", id: "zalo_minh_01", name: "Lê Minh (Zalo · Mô phỏng)", label: "Zalo OA" },
               { ch: "webchat", id: "web_guest_09", name: "Khách Web #09 (Mô phỏng)", label: "WebChat" },
-            ].map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 font-medium text-zinc-700 hover:border-zinc-400 dark:border-white/10 dark:bg-[#18181C] dark:text-zinc-200"
-                onClick={() => {
-                  setChannel(p.ch);
-                  setCustomerId(p.id);
-                  setCustomerName(p.name);
-                }}
-              >
-                <ChannelIcon channel={p.ch} className="h-3 w-3 shrink-0" />
-                <span>{p.label}</span>
-              </button>
-            ))}
+            ].map((p) => {
+              const isPresetActive = channel === p.ch && cleanCustomerId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={isPresetActive}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 font-medium transition ${
+                    isPresetActive
+                      ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-white/10 dark:bg-[#18181C] dark:text-zinc-200"
+                  }`}
+                  onClick={() => {
+                    setChannel(p.ch);
+                    setCustomerId(p.id);
+                    setCustomerName(p.name);
+                    setExternalMessageId(rid());
+                  }}
+                >
+                  <ChannelIcon channel={p.ch} className="h-3 w-3 shrink-0" />
+                  <span>{p.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="grid gap-2.5 sm:grid-cols-2">
@@ -398,7 +423,7 @@ export default function SimulatorView({ onOpenInbox }) {
           <div>
             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
               <label className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                Nội dung tin nhắn giả lập
+                Nội dung tin nhắn giả lập <span className="font-mono font-normal opacity-70">(Enter gửi)</span>
               </label>
               <div className="flex flex-wrap items-center gap-1">
                 {QUICK_SCENARIO_CHIPS.map((chip) => (
@@ -419,6 +444,12 @@ export default function SimulatorView({ onOpenInbox }) {
               rows={2}
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendNormal();
+                }
+              }}
             />
           </div>
 
@@ -627,6 +658,11 @@ export default function SimulatorView({ onOpenInbox }) {
             <div className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3.5 py-2 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:text-zinc-300">
               <span className="truncate">Phản hồi CSKH</span>
               <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap font-mono text-[10px]">
+                {roundTripByConv[currentConvId] && (
+                  <span className="rounded bg-sky-500/12 px-1.5 py-0.5 text-sky-700 dark:text-sky-300">
+                    sau {roundTripByConv[currentConvId]}s
+                  </span>
+                )}
                 <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300">
                   sentAtMs ✓
                 </span>
@@ -637,6 +673,11 @@ export default function SimulatorView({ onOpenInbox }) {
                     onClick={() => {
                       setSentByConv((p) => ({ ...p, [currentConvId]: [] }));
                       setRepliesByConv((p) => ({ ...p, [currentConvId]: [] }));
+                      setRoundTripByConv((p) => {
+                        const copy = { ...p };
+                        delete copy[currentConvId];
+                        return copy;
+                      });
                     }}
                     className="font-sans font-medium text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                   >

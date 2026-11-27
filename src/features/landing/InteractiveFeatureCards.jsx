@@ -1,12 +1,12 @@
 // FILE: src/features/landing/InteractiveFeatureCards.jsx
 import { useState } from "react";
 import { motion } from "motion/react";
-import { CheckCircle2, Lock, MousePointer2, Radio, RotateCcw, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Lock, MousePointer2, Radio, Repeat, RotateCcw, ShieldCheck } from "lucide-react";
 import SpotlightCard from "../../components/SpotlightCard.jsx";
 import { ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
 
 function OptimisticLockCard() {
-  const [phase, setPhase] = useState("resolved"); // "idle" | "racing" | "resolved"
+  const [phase, setPhase] = useState("resolved"); // "racing" | "resolved"
 
   function replayRace() {
     setPhase("racing");
@@ -38,7 +38,7 @@ function OptimisticLockCard() {
         </p>
       </div>
 
-      {/* Interactive Race Stage */}
+      {/* Interactive Race Stage with Animated Latency Bars */}
       <div className="mt-4 rounded-xl border border-zinc-200 bg-[#F8F8FA] p-3 dark:border-white/10 dark:bg-[#09090B]">
         <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white px-2.5 py-2 dark:border-white/[0.08] dark:bg-[#111114]">
           <div className="flex items-center gap-2">
@@ -56,38 +56,48 @@ function OptimisticLockCard() {
           </span>
         </div>
 
-        <div className="mt-2.5 space-y-1.5 font-mono text-[10px]">
-          <motion.div
-            key={`minh-${phase}`}
-            initial={{ x: -8, opacity: 0.6 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.25 }}
-            className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5"
-          >
-            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
-              <MousePointer2 className="h-3 w-3" />
-              Minh (0ms)
-            </span>
-            <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-bold text-emerald-700 dark:text-emerald-300">
-              {phase === "racing" ? "PATCH…" : "200 OK"}
-            </span>
-          </motion.div>
+        <div className="mt-2.5 space-y-2 font-mono text-[10px]">
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+                <MousePointer2 className="h-3 w-3" />
+                Minh (12ms)
+              </span>
+              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-bold text-emerald-700 dark:text-emerald-300">
+                {phase === "racing" ? "PATCH…" : "200 OK"}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-emerald-500/20">
+              <motion.div
+                key={`bar-minh-${phase}`}
+                initial={{ width: "12%" }}
+                animate={{ width: phase === "racing" ? "65%" : "100%" }}
+                transition={{ duration: 0.35 }}
+                className="h-full rounded-full bg-emerald-500"
+              />
+            </div>
+          </div>
 
-          <motion.div
-            key={`lan-${phase}`}
-            initial={{ x: -8, opacity: 0.6 }}
-            animate={phase === "resolved" ? { x: [0, -3, 3, 0], opacity: 1 } : { x: 0, opacity: 1 }}
-            transition={{ duration: 0.3, delay: phase === "resolved" ? 0.08 : 0 }}
-            className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5"
-          >
-            <span className="inline-flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-300">
-              <MousePointer2 className="h-3 w-3" />
-              Lan (+40ms)
-            </span>
-            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 font-bold text-amber-700 dark:text-amber-300">
-              {phase === "racing" ? "PATCH…" : "409 Sync → Minh"}
-            </span>
-          </motion.div>
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-300">
+                <MousePointer2 className="h-3 w-3" />
+                Lan (+40ms)
+              </span>
+              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 font-bold text-amber-700 dark:text-amber-300">
+                {phase === "racing" ? "PATCH…" : "409 Sync → Minh"}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-amber-500/20">
+              <motion.div
+                key={`bar-lan-${phase}`}
+                initial={{ width: "8%" }}
+                animate={{ width: phase === "racing" ? "45%" : "72%" }}
+                transition={{ duration: 0.38, delay: 0.08 }}
+                className="h-full rounded-full bg-amber-500"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </SpotlightCard>
@@ -97,6 +107,7 @@ function OptimisticLockCard() {
 function IdempotencyReopenCard() {
   const [mode, setMode] = useState("dedup"); // "dedup" | "reopen"
   const [tick, setTick] = useState(0);
+  const [blockedCount, setBlockedCount] = useState(1);
 
   return (
     <SpotlightCard className="flex flex-col justify-between p-5" delay={0.05}>
@@ -154,19 +165,29 @@ function IdempotencyReopenCard() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-2"
           >
-            <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-zinc-600 dark:border-white/10 dark:bg-[#111114] dark:text-zinc-300">
-              <span>#dup_01 × 2</span>
-              <span className="text-sky-500">→</span>
-              <span className="font-semibold text-zinc-900 dark:text-white">PROCESSING → DONE</span>
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-zinc-600 dark:border-white/10 dark:bg-[#111114] dark:text-zinc-300">
+              <span>#dup_01</span>
+              <span className="font-semibold text-zinc-900 dark:text-white">DONE Lock</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBlockedCount((c) => c + 1);
+                  setTick((t) => t + 1);
+                }}
+                className="inline-flex items-center gap-1 rounded bg-sky-500/15 px-1.5 py-0.5 font-semibold text-sky-700 hover:bg-sky-500/25 dark:text-sky-300"
+              >
+                <Repeat className="h-2.5 w-2.5" />
+                Bắn lặp ×2
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-300">
-                <span>Bản #1</span>
-                <span className="font-bold">1× Lưu</span>
+                <span>Đã lưu</span>
+                <span className="font-bold">1×</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-amber-700 dark:text-amber-300">
-                <span>Bản #2</span>
-                <span className="font-bold">Bỏ qua</span>
+                <span>Đã chặn</span>
+                <span className="font-bold tabular-nums">{blockedCount}×</span>
               </div>
             </div>
           </motion.div>

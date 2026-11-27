@@ -111,3 +111,24 @@ export function filterLocalMacros(macros = [], draft = "") {
   if (!query) return macros;
   return macros.filter((m) => String(m.cmd || "").toLowerCase().includes(query));
 }
+
+/**
+ * Giới hạn độ rộng thanh danh sách hội thoại trên desktop (mặc định 392px).
+ */
+export function clampSidebarWidth(width, min = 336, max = 480) {
+  const n = Number(width);
+  if (!Number.isFinite(n)) return 392;
+  return Math.min(max, Math.max(min, Math.round(n)));
+}
+
+/**
+ * Đếm số tin nhắn chứa từ khóa tìm kiếm trong luồng chat hiện tại.
+ */
+export function countMessageMatches(messages = [], query = "") {
+  const q = String(query ?? "").trim().toLowerCase();
+  if (!q || !Array.isArray(messages)) return 0;
+  return messages.reduce(
+    (count, m) => (String(m?.content || "").toLowerCase().includes(q) ? count + 1 : count),
+    0
+  );
+}

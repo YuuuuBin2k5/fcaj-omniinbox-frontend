@@ -12,6 +12,7 @@ import {
   Inbox,
   Info,
   RotateCcw,
+  Search,
   ShieldAlert,
   Sparkles,
   UserCheck,
@@ -20,6 +21,7 @@ import {
 import { useInbox } from "../../hooks/useInbox.js";
 import { getAgentName, USE_MOCK } from "../../services/auth.js";
 import { latencyTracker } from "../../services/latencyTracker.js";
+import { clampSidebarWidth, countMessageMatches } from "../../services/uiFormat.js";
 import { resetMock, seedManyForPagination, seedSameNamePair } from "../../services/mockBackend.js";
 import { ChannelBadge, ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
@@ -67,10 +69,17 @@ export default function InboxView({
   const [channel, setChannel] = useState("all");
   const [status, setStatus] = useState("all");
   const [queueScope, setQueueScope] = useState("all");
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() =>
+    clampSidebarWidth(typeof localStorage !== "undefined" ? localStorage.getItem("omni_sidebar_w") : 392)
+  );
+  const [resizingSidebar, setResizingSidebar] = useState(false);
   const [draftsByConv, setDraftsByConv] = useState({});
   const [showQaTools, setShowQaTools] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
   const [inspectorTab, setInspectorTab] = useState("overview");
+  const [threadSearchOpen, setThreadSearchOpen] = useState(false);
+  const [threadSearch, setThreadSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [failNextArmed, setFailNextArmed] = useState(
     () => typeof localStorage !== "undefined" && localStorage.getItem("omni_mock_fail_next") === "1"
@@ -80,6 +89,7 @@ export default function InboxView({
   const [copiedCsv, setCopiedCsv] = useState(false);
   const composerRef = useRef(null);
   const searchInputRef = useRef(null);
+  const threadSearchInputRef = useRef(null);
 
   const currentAgent = getAgentName();
 
@@ -88,12 +98,45 @@ export default function InboxView({
       inbox.conversations.filter((c) => {
         if (channel !== "all" && c.channel !== channel) return false;
         if (status !== "all" && c.status !== status) return false;
+        if (unreadOnly && !(Number(c.unreadCount) > 0)) return false;
         if (queueScope === "mine" && c.assignedAgent !== currentAgent) return false;
         if (queueScope === "unassigned" && c.assignedAgent && c.assignedAgent !== "unassigned") return false;
         return true;
       }),
-    [inbox.conversations, channel, status, queueScope, currentAgent]
+    [inbox.conversations, channel, status, unreadOnly, queueScope, currentAgent]
   );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("omni_sidebar_w", String(sidebarWidth));
+    } catch {
+      // ignore storage errors
+    }
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    setThreadSearch("");
+    setThreadSearchOpen(false);
+  }, [inbox.selectedId]);
+
+  useEffect(() => {
+    if (!resizingSidebar) return undefined;
+    function onMove(e) {
+      // Trừ 56px Left Micro Rail trên desktop
+      setSidebarWidth(clampSidebarWidth(e.clientX - 56));
+    }
+    function onUp() {
+      setResizingSidebar(false);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [resizingSidebar]);
 
   useEffect(() => {
     onConversationsChange?.(inbox.conversations);
@@ -440,11 +483,11 @@ export default function InboxView({
       </AnimatePresence>
 
       {/* Main Split Workspace */}
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1" style={{ "--sidebar-w": `${sidebarWidth}px` }}>
         <aside
           className={`${
             conv ? "hidden md:block" : "block w-full"
-          } shrink-0 border-r border-zinc-200/90 md:w-[344px] lg:w-[392px] dark:border-white/[0.08]`}
+          } shrink-0 border-r border-zinc-200/90 md:w-[344px] lg:w-[var(--sidebar-w)] dark:border-white/[0.08]`}
         >
           <ConversationList
             allConversations={inbox.conversations}
@@ -453,6 +496,7 @@ export default function InboxView({
             channel={channel}
             status={status}
             queueScope={queueScope}
+            unreadOnly={unreadOnly}
             currentAgent={currentAgent}
             realtime={inbox.realtime}
             nextToken={inbox.nextToken}
@@ -462,6 +506,7 @@ export default function InboxView({
             draftsByConv={draftsByConv}
             searchInputRef={searchInputRef}
             onToggleQaTools={() => setShowQaTools((v) => !v)}
+            onToggleUnreadOnly={() => setUnreadOnly((v) => !v)}
             onRefresh={handleRefresh}
             onChannelChange={setChannel}
             onStatusChange={setStatus}
@@ -470,13 +515,28 @@ export default function InboxView({
               setChannel("all");
               setStatus("all");
               setQueueScope("all");
+              setUnreadOnly(false);
             }}
             onQuickAssign={(c, ag) => inbox.assign(c, ag)}
             onQuickResolve={(c) => inbox.setStatus(c, "RESOLVED")}
+            onQuickReopen={(c) => inbox.setStatus(c, "OPEN")}
             onSelect={inbox.select}
             onLoadMore={inbox.loadMore}
           />
         </aside>
+
+        {/* Desktop Sidebar Resize Handle (lg+) */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Kéo thay đổi độ rộng danh sách hội thoại"
+          title="Kéo để chỉnh độ rộng · Double-click để đặt lại"
+          onPointerDown={() => setResizingSidebar(true)}
+          onDoubleClick={() => setSidebarWidth(392)}
+          className="group hidden w-1 shrink-0 cursor-col-resize items-center justify-center bg-transparent transition hover:bg-sky-500/20 lg:flex"
+        >
+          <span className="h-8 w-[1.5px] rounded-full bg-zinc-300 opacity-0 transition group-hover:bg-sky-500 group-hover:opacity-100 dark:bg-zinc-700" />
+        </div>
 
         <main
           className={`${
@@ -655,6 +715,27 @@ export default function InboxView({
 
                   <button
                     type="button"
+                    aria-label="Tìm trong hội thoại"
+                    title="Tìm nội dung tin nhắn trong hội thoại"
+                    onClick={() => {
+                      setThreadSearchOpen((v) => {
+                        const next = !v;
+                        if (next) setTimeout(() => threadSearchInputRef.current?.focus(), 20);
+                        else setThreadSearch("");
+                        return next;
+                      });
+                    }}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${
+                      threadSearchOpen
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950"
+                        : "border-zinc-200 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/12 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+                    }`}
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
                     aria-label="Chi tiết hội thoại"
                     title="Chi tiết kỹ thuật hội thoại (I)"
                     onClick={() => setShowInspector((v) => !v)}
@@ -668,6 +749,53 @@ export default function InboxView({
                   </button>
                 </div>
               </header>
+
+              {/* Collapsible In-Thread Message Search Bar */}
+              <AnimatePresence>
+                {threadSearchOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-b border-zinc-200/80 bg-zinc-50 px-3 py-2 dark:border-white/[0.08] dark:bg-[#0D0D10]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Search className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                      <input
+                        ref={threadSearchInputRef}
+                        aria-label="Tìm nội dung trong luồng tin nhắn"
+                        value={threadSearch}
+                        onChange={(e) => setThreadSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            setThreadSearch("");
+                            setThreadSearchOpen(false);
+                          }
+                        }}
+                        placeholder="Tìm từ khóa trong hội thoại này…"
+                        className="min-w-0 flex-1 bg-transparent text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none dark:text-white"
+                      />
+                      {threadSearch.trim() && (
+                        <span className="shrink-0 font-mono text-[10px] font-semibold tabular-nums text-sky-600 dark:text-sky-400">
+                          {countMessageMatches(msgs, threadSearch)} tin khớp
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        aria-label="Đóng tìm trong hội thoại"
+                        onClick={() => {
+                          setThreadSearch("");
+                          setThreadSearchOpen(false);
+                        }}
+                        className="rounded p-0.5 text-zinc-400 hover:text-zinc-800 dark:hover:text-white"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="relative flex min-h-0 flex-1">
                 {/* Floating Sonner-Style Alert Pill (zero layout shift on ChatThread) */}
@@ -711,6 +839,7 @@ export default function InboxView({
                     messages={msgs}
                     loading={Boolean(inbox.loadingMessagesByConv[conv.conversationId])}
                     pendingOutgoing={inbox.pendingOutgoingByConv[conv.conversationId]}
+                    searchQuery={threadSearchOpen ? threadSearch : ""}
                     hasOlder={inbox.hasOlder}
                     retryingMessageId={inbox.retryingMessageId}
                     onLoadOlder={inbox.loadOlder}
@@ -727,6 +856,7 @@ export default function InboxView({
                     unconfirmedNotice={inbox.unconfirmedByConv[conv.conversationId]}
                     onClearUnconfirmed={() => inbox.clearUnconfirmed(conv.conversationId)}
                     onReopen={() => inbox.setStatus(conv, "OPEN")}
+                    onTakeOver={currentAgent ? () => inbox.assign(conv, currentAgent) : undefined}
                     onSend={handleSend}
                   />
                 </div>

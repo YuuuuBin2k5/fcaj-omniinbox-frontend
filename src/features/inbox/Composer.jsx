@@ -1,7 +1,7 @@
 // FILE: src/features/inbox/Composer.jsx
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertCircle, CheckCircle2, Loader2, RotateCcw, Send, Sparkles, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, RotateCcw, Send, Sparkles, UserCheck, Zap } from "lucide-react";
 import { AI_ENABLED, suggestReplies } from "../../services/apiClient.js";
 import { getAgentName } from "../../services/auth.js";
 import { filterLocalMacros } from "../../services/uiFormat.js";
@@ -52,6 +52,7 @@ export default function Composer({
   unconfirmedNotice,
   onClearUnconfirmed,
   onReopen,
+  onTakeOver,
   onSend,
   textareaRef,
 }) {
@@ -160,12 +161,23 @@ export default function Composer({
       )}
 
       {otherAssignee && (
-        <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          <span>
-            Hội thoại đang do <b className="font-mono">{otherAssignee}</b> phụ trách — cân nhắc trước khi gửi hoặc nhận
-            lại hội thoại.
-          </span>
+        <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">
+          <div className="flex min-w-0 items-center gap-2">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              Hội thoại đang do <b className="font-mono">{otherAssignee}</b> phụ trách — cân nhắc trước khi gửi.
+            </span>
+          </div>
+          {onTakeOver && (
+            <button
+              type="button"
+              onClick={onTakeOver}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amber-500/35 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-amber-800 hover:bg-white dark:bg-black/30 dark:text-amber-200"
+            >
+              <UserCheck className="h-3 w-3" />
+              Nhận lại
+            </button>
+          )}
         </div>
       )}
 

@@ -219,6 +219,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
           onNavigate={setView}
           onSelectConversation={(c) => setExternalSelectConv(c)}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
           onSeedSameName={seedSameNamePair}
           onSeedPagination={() => seedManyForPagination(60)}
         />
@@ -515,6 +516,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         onNavigate={setView}
         onSelectConversation={(c) => setExternalSelectConv(c)}
+        onOpenShortcuts={() => setShortcutsOpen(true)}
         onSeedSameName={seedSameNamePair}
         onSeedPagination={() => seedManyForPagination(60)}
       />
