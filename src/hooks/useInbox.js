@@ -1,4 +1,3 @@
-// FILE: src/hooks/useInbox.js
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import * as api from "../services/apiClient.js";
 import { getAgentName, USE_MOCK } from "../services/auth.js";
@@ -324,7 +323,7 @@ export function useInbox() {
           dispatch({ type: "messages", id: cid, list: m.messages || [] });
           setMsgToken((p) => ({ ...p, [cid]: m.nextToken ?? null }));
         } catch {
-          // ignore secondary sync failure
+          // Bỏ qua lỗi đồng bộ phụ khi thử lại tin nhắn
         }
         setUnconfirmedByConv((p) => ({
           ...p,

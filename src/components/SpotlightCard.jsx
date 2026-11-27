@@ -1,4 +1,3 @@
-// FILE: src/components/SpotlightCard.jsx
 import { useRef } from "react";
 import { motion } from "motion/react";
 

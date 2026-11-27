@@ -1,4 +1,3 @@
-// FILE: src/App.jsx
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Command, FlaskConical, Home, Inbox, Keyboard, Loader2, LogOut, Moon, Search, ShieldCheck, Sun, X } from "lucide-react";
@@ -300,7 +299,6 @@ export default function App() {
         />
       )}
 
-      {/* Workspace shell stays mounted while authed so WS, drafts, filters & Simulator logs survive view switches */}
       <div
         aria-hidden={isLanding || undefined}
         className={
@@ -309,7 +307,6 @@ export default function App() {
             : "flex h-screen supports-[height:100dvh]:h-dvh flex-col bg-[#F6F7F9] text-zinc-900 md:flex-row dark:bg-[#09090B] dark:text-zinc-100"
         }
       >
-        {/* Desktop Left Micro Navigation Rail (56px) — dimmed calm chrome */}
         <aside className="relative z-30 hidden w-14 shrink-0 flex-col items-center justify-between border-r border-zinc-200/90 bg-[#F8F8FA] py-3 md:flex dark:border-white/[0.08] dark:bg-[#0B0B0E]">
           <div className="flex flex-col items-center gap-3">
             <div className="group relative">
@@ -402,7 +399,6 @@ export default function App() {
               </span>
             </div>
 
-            {/* Agent Avatar + Profile/Shortcuts Popover */}
             <div ref={profileRef} className="relative">
               <button
                 type="button"
@@ -437,7 +433,7 @@ export default function App() {
                         </div>
                         <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400">
                           <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                          <span>{USE_MOCK ? "Local Mock Mode" : "AWS Cognito SRP"}</span>
+                          <span>{USE_MOCK ? "Chế độ Local Mock" : "Amazon Cognito"}</span>
                         </div>
                       </div>
                     </div>
@@ -502,7 +498,6 @@ export default function App() {
           </div>
         </aside>
 
-        {/* Mobile Compact Single Top Bar (< md) */}
         <header className="flex h-12 shrink-0 items-center justify-between gap-1.5 border-b border-zinc-200 bg-white px-2.5 md:hidden dark:border-white/10 dark:bg-[#09090B]">
           <button type="button" aria-label="Về trang giới thiệu" onClick={() => setView("landing")} className="shrink-0">
             <BrandLogo size={22} showText={false} />
@@ -558,7 +553,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main View Area — kept mounted across view switches to preserve WS, drafts & simulator timeline */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div className={view === "inbox" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
             <InboxView

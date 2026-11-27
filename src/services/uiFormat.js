@@ -1,10 +1,6 @@
-// FILE: src/services/uiFormat.js
 // Pure UI formatting, search highlight & validation utilities (không phụ thuộc DOM, dễ unit test).
 
-/**
- * Rút gọn email nhân viên hiển thị gọn trên bong bóng & header (giữ full email ở tooltip).
- * Ví dụ: "agent.minh@omniinbox.local" -> "agent.minh"
- */
+// Rút gọn email nhân viên hiển thị gọn trên bong bóng và header (giữ full email ở tooltip).
 export function formatAgentShort(agent) {
   const raw = String(agent || "").trim();
   if (!raw || raw === "unassigned") return raw || "unassigned";
@@ -12,9 +8,7 @@ export function formatAgentShort(agent) {
   return atIdx > 0 ? raw.slice(0, atIdx) : raw;
 }
 
-/**
- * Tách chuỗi JSON thành mảng token màu cú pháp an toàn (không dùng dangerouslySetInnerHTML).
- */
+// Tách chuỗi JSON thành mảng token màu cú pháp an toàn (không dùng dangerouslySetInnerHTML).
 export function tokenizeJson(input) {
   const src = String(input ?? "");
   const tokens = [];
@@ -34,9 +28,7 @@ export function tokenizeJson(input) {
   return tokens;
 }
 
-/**
- * Tách đoạn văn thành các phần khớp/không khớp với từ khóa tìm kiếm (an toàn XSS, không phân biệt hoa thường).
- */
+// Tách đoạn văn thành các phần khớp/không khớp với từ khóa tìm kiếm (an toàn XSS, không phân biệt hoa thường).
 export function splitHighlight(text, query) {
   const source = String(text ?? "");
   const q = String(query ?? "").trim();
@@ -63,9 +55,7 @@ export function splitHighlight(text, query) {
   return parts.length ? parts : [{ text: source, match: false }];
 }
 
-/**
- * Đánh giá nhanh các tiêu chí mật khẩu chuẩn Cognito cho bước NEW_PASSWORD_REQUIRED.
- */
+// Đánh giá nhanh các tiêu chí mật khẩu chuẩn Cognito cho bước NEW_PASSWORD_REQUIRED.
 export function evaluatePasswordRules(password) {
   const pwd = String(password ?? "");
   return {
@@ -76,9 +66,7 @@ export function evaluatePasswordRules(password) {
   };
 }
 
-/**
- * Định dạng thời gian tương đối ngắn gọn cho danh sách hội thoại CSKH.
- */
+// Định dạng thời gian tương đối ngắn gọn cho danh sách hội thoại CSKH.
 export function formatRelativeTime(isoOrMs, nowMs = Date.now()) {
   if (isoOrMs === undefined || isoOrMs === null || isoOrMs === "") return "";
   const ms = typeof isoOrMs === "number" ? isoOrMs : Date.parse(isoOrMs);
@@ -101,9 +89,7 @@ export function formatRelativeTime(isoOrMs, nowMs = Date.now()) {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-/**
- * Lọc danh sách mẫu trả lời nhanh cục bộ theo lệnh gõ sau dấu "/".
- */
+// Lọc danh sách mẫu trả lời nhanh cục bộ theo lệnh gõ sau dấu "/".
 export function filterLocalMacros(macros = [], draft = "") {
   const raw = String(draft ?? "");
   if (!raw.startsWith("/")) return macros;
@@ -112,18 +98,14 @@ export function filterLocalMacros(macros = [], draft = "") {
   return macros.filter((m) => String(m.cmd || "").toLowerCase().includes(query));
 }
 
-/**
- * Giới hạn độ rộng thanh danh sách hội thoại trên desktop (mặc định 392px).
- */
+// Giới hạn độ rộng thanh danh sách hội thoại trên desktop (mặc định 392px).
 export function clampSidebarWidth(width, min = 336, max = 480) {
   const n = Number(width);
   if (!Number.isFinite(n)) return 392;
   return Math.min(max, Math.max(min, Math.round(n)));
 }
 
-/**
- * Đếm số tin nhắn chứa từ khóa tìm kiếm trong luồng chat hiện tại.
- */
+// Đếm số tin nhắn chứa từ khóa tìm kiếm trong luồng chat hiện tại.
 export function countMessageMatches(messages = [], query = "") {
   const q = String(query ?? "").trim().toLowerCase();
   if (!q || !Array.isArray(messages)) return 0;
@@ -133,18 +115,14 @@ export function countMessageMatches(messages = [], query = "") {
   );
 }
 
-/**
- * Xác định hội thoại có đang chờ shop trả lời hay không (khách nhắn gần nhất và chưa RESOLVED).
- */
+// Xác định hội thoại có đang chờ shop trả lời hay không (khách nhắn gần nhất và chưa RESOLVED).
 export function isAwaitingReply(conv) {
   if (!conv || conv.status === "RESOLVED") return false;
   if (conv.lastMessageDirection) return conv.lastMessageDirection === "INBOUND";
   return !String(conv.lastMessage || "").startsWith("[NV] ");
 }
 
-/**
- * Nhãn SLA thời gian chờ cho hội thoại khách đang đợi phản hồi (chỉ hiện từ >= 5 phút).
- */
+// Nhãn SLA thời gian chờ cho hội thoại khách đang đợi phản hồi (chỉ hiện từ >= 5 phút).
 export function formatWaitBadge(conv, nowMs = Date.now()) {
   if (!isAwaitingReply(conv)) return null;
   const ref = conv.lastMessageAt || conv.lastInboundAt;

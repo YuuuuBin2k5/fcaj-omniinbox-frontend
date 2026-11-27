@@ -1,4 +1,3 @@
-// FILE: src/features/inbox/ConversationList.jsx
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { CheckCircle2, RefreshCw, RotateCcw, Search, SlidersHorizontal, UserCheck, X } from "lucide-react";
@@ -30,7 +29,7 @@ const REALTIME_META = {
   connected: { label: "Live", dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400" },
   connecting: { label: "Connecting", dot: "bg-amber-400 animate-pulse", text: "text-amber-700 dark:text-amber-300" },
   reconnecting: { label: "Reconnecting", dot: "bg-amber-400 animate-pulse", text: "text-amber-700 dark:text-amber-300" },
-  mock: { label: "Local Mock", dot: "bg-amber-400", text: "text-amber-700 dark:text-amber-300" },
+  mock: { label: "Thử nghiệm", dot: "bg-amber-400", text: "text-amber-700 dark:text-amber-300" },
 };
 
 const AVATAR_RING = {
@@ -140,7 +139,6 @@ export default function ConversationList({
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-[#111114]">
-      {/* Single Compact Column Header */}
       <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-3 dark:border-white/[0.08]">
         <div className="flex items-center gap-1.5">
           <h2 className="text-sm font-bold tracking-tight text-zinc-950 dark:text-white">Hộp thư</h2>
@@ -220,16 +218,15 @@ export default function ConversationList({
         </div>
       </div>
 
-      {/* Search + Queue Scope + Single-Row Channel & Status Filters */}
       <div className="space-y-2 border-b border-zinc-200/90 p-2.5 dark:border-white/[0.08]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-400" />
           <input
             ref={searchInputRef}
-            aria-label="Tìm tên khách hoặc customerId"
+            aria-label="Tìm khách hàng hoặc mã khách"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm tên khách, customerId…"
+            placeholder="Tìm khách hàng, mã khách…"
             className="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 pl-8 pr-8 text-xs text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-[#09090B] dark:text-white dark:focus:border-white/30"
           />
           {search ? (
@@ -248,7 +245,6 @@ export default function ConversationList({
           )}
         </div>
 
-        {/* Queue Scope Segmented Control */}
         <div className="grid grid-cols-3 gap-1 rounded-lg bg-zinc-100/90 p-0.5 dark:bg-[#09090B]">
           {QUEUE_SCOPES.map((s) => {
             const active = queueScope === s.id;
@@ -270,7 +266,6 @@ export default function ConversationList({
           })}
         </div>
 
-        {/* Channel Filter Bar */}
         <div className="flex flex-wrap items-center gap-1">
           {CHANNEL_TABS.map((t) => (
             <button
@@ -297,14 +292,6 @@ export default function ConversationList({
           ))}
         </div>
 
-        {selectedChannelTab?.sim && (
-          <div className="flex items-center gap-1.5 rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-            Đang lọc kênh {selectedChannelTab.label} · Mô phỏng (Simulator)
-          </div>
-        )}
-
-        {/* Status Filter Bar */}
         <div className="flex flex-wrap items-center gap-1">
           {STATUS_TABS.map((t) => (
             <button
@@ -333,7 +320,6 @@ export default function ConversationList({
         </div>
       </div>
 
-      {/* Conversation List */}
       <div className="gutter-stable flex-1 overflow-y-auto">
         {loading && allConversations.length === 0 ? (
           <div aria-label="Đang tải danh sách hội thoại" className="divide-y divide-zinc-100 dark:divide-white/[0.06]">
@@ -422,7 +408,6 @@ export default function ConversationList({
                 )}
 
                 <div className="flex items-start gap-2.5">
-                  {/* Avatar + Channel Micro-Icon Overlay */}
                   <div className="relative mt-0.5 shrink-0">
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ring-1 ${ringCls}`}
@@ -435,7 +420,6 @@ export default function ConversationList({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    {/* Line 1: Name (with Highlight) + Timestamp / Hover Quick-Triage Actions */}
                     <div className="flex items-center justify-between gap-2">
                       <span
                         className={`truncate text-xs ${
@@ -503,7 +487,6 @@ export default function ConversationList({
                       </div>
                     </div>
 
-                    {/* Line 2: Draft indicator or Last Message (with Highlight) + Unread Badge */}
                     <div className="mt-1 flex items-center justify-between gap-2">
                       {draftPreview ? (
                         <span className="truncate text-xs text-amber-600 dark:text-amber-300">
@@ -549,7 +532,6 @@ export default function ConversationList({
                       )}
                     </div>
 
-                    {/* Line 3: Channel Badge + customerId (with Highlight) + StatusIcon + Short Agent */}
                     <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px]">
                       <div className="flex min-w-0 items-center gap-1.5">
                         <ChannelBadge channel={c.channel} />

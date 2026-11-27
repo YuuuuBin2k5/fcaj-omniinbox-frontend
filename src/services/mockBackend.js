@@ -1,4 +1,3 @@
-// FILE: src/services/mockBackend.js
 // Giả lập đồng bộ 100% hợp đồng 7 endpoint + 3 event WS qua localStorage + BroadcastChannel.
 import { ApiError } from "./errors.js";
 import { getAgentName } from "./auth.js";
@@ -103,7 +102,7 @@ function extractTelegramContent(m = {}) {
   return null;
 }
 
-// ---- 1. POST /webhook/{channel} ----
+// ---- 1. Tiếp nhận webhook từ kênh (POST /webhook/{channel}) ----
 function ingest(channel, payload = {}) {
   const ch = String(channel || "").toLowerCase();
   if (!CHANNELS.includes(ch)) throw new ApiError(404, { error: "Unknown channel" });
@@ -199,7 +198,7 @@ function ingest(channel, payload = {}) {
   return { ok: true, status: "QUEUED", channel: ch };
 }
 
-// ---- 2. GET /conversations ----
+// ---- 2. Lấy danh sách hội thoại (GET /conversations) ----
 function listConversations(q) {
   const db = load();
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || 50, 1), 100);
@@ -215,7 +214,7 @@ function listConversations(q) {
   return { conversations: page, nextToken: next };
 }
 
-// ---- 3. GET /conversations/{id}/messages ----
+// ---- 3. Lấy lịch sử tin nhắn (GET /conversations/{id}/messages) ----
 function listMessages(id, q) {
   const db = load();
   if (!db.conversations[id]) return { conversationId: id, messages: [], nextToken: null };
@@ -230,7 +229,7 @@ function listMessages(id, q) {
   };
 }
 
-// ---- 4. PATCH /conversations/{id} ----
+// ---- 4. Cập nhật trạng thái hoặc phụ trách (PATCH /conversations/{id}) ----
 function patchConversation(id, body = {}) {
   const db = load();
   const conv = db.conversations[id];
@@ -270,7 +269,7 @@ function patchConversation(id, body = {}) {
   return { conversation: pub };
 }
 
-// ---- 5. POST /messages/reply ----
+// ---- 5. Gửi phản hồi nhân viên (POST /messages/reply) ----
 // Đồng bộ tuyệt đối với omni-outbound-sender:
 // - Ownership guard 409 nếu đang thuộc nhân viên khác; pre-claim nếu đang unassigned.
 // - Không chuyển OPEN -> IN_PROGRESS, không xóa unreadCount, không ghi đè lastMessage khi FAILED.
@@ -374,14 +373,14 @@ function reply(body = {}) {
   return { ok: status === "SENT", message: { ...msg }, conversation: pub };
 }
 
-// ---- 6. POST /ws-ticket ----
+// ---- 6. Cấp ticket kết nối WebSocket (POST /ws-ticket) ----
 function wsTicket(body = {}) {
   const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
   const clientType = body?.clientType === "simulator" ? "simulator" : "portal";
   return { ticket: `mock-${id}`, expiresAt: Date.now() + 60000, clientType };
 }
 
-// ---- 7. POST /ai/suggest (pha 2) ----
+// ---- 7. Gợi ý trả lời AI pha 2 (POST /ai/suggest) ----
 function suggest(body = {}) {
   const db = load();
   if (!db.conversations[body.conversationId]) throw new ApiError(404, { error: "Conversation not found" });

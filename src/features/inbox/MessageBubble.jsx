@@ -1,4 +1,3 @@
-// FILE: src/features/inbox/MessageBubble.jsx
 import { useState } from "react";
 import { motion } from "motion/react";
 import { AlertTriangle, Check, CheckCheck, Copy, RotateCcw } from "lucide-react";
@@ -67,7 +66,6 @@ export default function MessageBubble({
       transition={{ type: "spring", stiffness: 460, damping: 35 }}
       className={`group flex items-end gap-2 ${out ? "justify-end" : "justify-start"} ${isGroupStart ? "mt-3.5" : "mt-1"}`}
     >
-      {/* Inbound Customer Avatar + Channel Micro-Icon or Alignment Spacer */}
       {!out &&
         (isGroupStart ? (
           <div className="relative shrink-0">
@@ -84,7 +82,6 @@ export default function MessageBubble({
           <div className="w-7 shrink-0" aria-hidden="true" />
         ))}
 
-      {/* Subtle Copy Action & Grouped Hover Timestamp (Outbound Left) */}
       {out && (
         <div className="mb-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
           {!isGroupStart && timeText && (
@@ -132,23 +129,15 @@ export default function MessageBubble({
           <HighlightBody content={msg.content} query={highlightQuery} outbound={out} />
         </div>
 
-        {(out || (isGroupEnd && SIMULATED.has(msg.channel))) && (
-          <div
-            className={`mt-1.5 flex items-center gap-2 text-[10px] ${
-              out ? "justify-end text-blue-100" : "justify-start text-zinc-400"
-            }`}
-          >
-            {!out && isGroupEnd && SIMULATED.has(msg.channel) && (
-              <span className="font-medium text-amber-600 dark:text-amber-400">Kênh {msg.channel} · Mô phỏng</span>
-            )}
-
-            {out && msg.deliveredVia === "simulator" && (
+        {out && (
+          <div className="mt-1.5 flex items-center justify-end gap-2 text-[10px] text-blue-100">
+            {msg.deliveredVia === "simulator" && (
               <span className="rounded bg-white/15 px-1.5 py-0.5 font-medium">Mô phỏng</span>
             )}
-            {out && msg.deliveredVia === "telegram" && msg.status === "SENT" && (
-              <span className="rounded bg-white/15 px-1.5 py-0.5 font-medium">Telegram thật</span>
+            {msg.deliveredVia === "telegram" && msg.status === "SENT" && (
+              <span className="rounded bg-white/15 px-1.5 py-0.5 font-medium">Telegram</span>
             )}
-            {out && msg.status === "SENT" && (
+            {msg.status === "SENT" && (
               <span className="inline-flex items-center gap-1 font-medium">
                 <CheckCheck className="h-3 w-3" />
                 Đã gửi
@@ -197,7 +186,6 @@ export default function MessageBubble({
         )}
       </div>
 
-      {/* Subtle Copy Action & Grouped Hover Timestamp (Inbound Right) */}
       {!out && (
         <div className="mb-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
           <button

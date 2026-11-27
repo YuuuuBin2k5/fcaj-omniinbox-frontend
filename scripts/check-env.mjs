@@ -1,4 +1,3 @@
-// FILE: scripts/check-env.mjs
 // Dừng build nếu cấu hình production sai (đang để mock hoặc thiếu URL/Cognito).
 import fs from "node:fs";
 import path from "node:path";

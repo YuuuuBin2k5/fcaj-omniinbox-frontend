@@ -1,4 +1,3 @@
-// FILE: src/services/apiClient.js
 import { getIdToken, USE_MOCK } from "./auth.js";
 import { ApiError } from "./errors.js";
 import * as mock from "./mockBackend.js";

@@ -1,4 +1,3 @@
-// FILE: src/components/CommandPalette.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { FlaskConical, Home, Inbox, Keyboard, Moon, Search, Sparkles, Sun, Terminal } from "lucide-react";
@@ -48,32 +47,32 @@ export default function CommandPalette({
       {
         id: "nav-inbox",
         group: "Điều hướng",
-        label: "Mở Hộp thư CSKH (#inbox)",
-        hint: "Agent Portal",
+        label: "Mở Hộp thư CSKH",
+        hint: "Hộp thư",
         icon: Inbox,
         run: () => onNavigate("inbox"),
       },
       {
         id: "nav-sim",
         group: "Điều hướng",
-        label: "Mở Customer Simulator (#simulator)",
-        hint: "Mô phỏng Shopee / Zalo / WebChat",
+        label: "Mở trang Simulator",
+        hint: "Kênh mô phỏng",
         icon: FlaskConical,
         run: () => onNavigate("simulator"),
       },
       {
         id: "nav-landing",
         group: "Điều hướng",
-        label: "Xem trang giới thiệu (#landing)",
-        hint: "Interactive Sandbox",
+        label: "Xem trang giới thiệu",
+        hint: "Trang chủ",
         icon: Home,
         run: () => onNavigate("landing"),
       },
       {
         id: "toggle-theme",
         group: "Giao diện",
-        label: theme === "dark" ? "Chuyển sang giao diện Sáng (Light)" : "Chuyển sang giao diện Tối (Obsidian)",
-        hint: theme === "dark" ? "Light" : "Dark",
+        label: theme === "dark" ? "Đổi giao diện Sáng" : "Đổi giao diện Tối",
+        hint: theme === "dark" ? "Sáng" : "Tối",
         icon: theme === "dark" ? Sun : Moon,
         run: () => onToggleTheme(),
       },
@@ -82,8 +81,8 @@ export default function CommandPalette({
             {
               id: "open-shortcuts",
               group: "Giao diện",
-              label: "Mở bảng phím tắt (?)",
-              hint: "Shortcuts",
+              label: "Bảng phím tắt (?)",
+              hint: "Phím tắt",
               icon: Keyboard,
               run: () => onOpenShortcuts(),
             },
@@ -95,9 +94,9 @@ export default function CommandPalette({
       actions.push(
         {
           id: "seed-pair",
-          group: "Mock QA",
-          label: "Seed 2 khách trùng tên (Nguyễn Văn A)",
-          hint: "shopee_a1 & shopee_a2",
+          group: "Dữ liệu thử",
+          label: "Tạo 2 khách trùng tên",
+          hint: "Nguyễn Văn A",
           icon: Sparkles,
           run: () => {
             onSeedSameName?.();
@@ -106,9 +105,9 @@ export default function CommandPalette({
         },
         {
           id: "seed-60",
-          group: "Mock QA",
-          label: "Seed 60 hội thoại kiểm thử phân trang nextToken",
-          hint: "Mock DB",
+          group: "Dữ liệu thử",
+          label: "Tạo 60 hội thoại",
+          hint: "Thử phân trang",
           icon: Terminal,
           run: () => {
             onSeedPagination?.();
