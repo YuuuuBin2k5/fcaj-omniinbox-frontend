@@ -84,7 +84,7 @@ export default function ChaosToCalmSlider() {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="relative min-h-[268px] cursor-ew-resize select-none overflow-hidden rounded-xl border border-zinc-200 bg-[#F8F8FA] sm:min-h-[280px] dark:border-white/10 dark:bg-[#09090B]"
+        className="relative min-h-[268px] cursor-ew-resize select-none overflow-hidden rounded-xl border border-zinc-200 bg-[#F8F8FA] transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500/60 sm:min-h-[280px] dark:border-white/10 dark:bg-[#09090B]"
       >
         {/* Base Layer: AFTER (Calm Unified Inbox) */}
         <div className="dot-canvas absolute inset-0 flex flex-col justify-between p-4 sm:p-5">
@@ -201,19 +201,7 @@ export default function ChaosToCalmSlider() {
           </div>
         </div>
 
-        {/* Center Draggable Divider & Grip */}
-        <div
-          style={{ left: `${splitPct}%` }}
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 z-20 -translate-x-1/2"
-        >
-          <div className="h-full w-[1.5px] bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.75)]" />
-          <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-sky-400/60 bg-zinc-950 text-white shadow-lg">
-            <MoveHorizontal className="h-3.5 w-3.5" />
-          </div>
-        </div>
-
-        {/* Keyboard Accessible Overlay Range Input */}
+        {/* Keyboard Accessible Overlay Range Input (precedes Grip so peer-focus-visible styles apply) */}
         <input
           type="range"
           min={12}
@@ -222,8 +210,20 @@ export default function ChaosToCalmSlider() {
           aria-label="Kéo so sánh Trước và Sau OmniInbox"
           onChange={(e) => setSplitPct(Number(e.target.value))}
           onPointerDown={(e) => e.stopPropagation()}
-          className="sr-only"
+          className="peer sr-only"
         />
+
+        {/* Center Draggable Divider & Grip */}
+        <div
+          style={{ left: `${splitPct}%` }}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 z-20 -translate-x-1/2 peer-focus-visible:[&_.slider-grip]:ring-2 peer-focus-visible:[&_.slider-grip]:ring-sky-400 peer-focus-visible:[&_.slider-grip]:ring-offset-2 peer-focus-visible:[&_.slider-grip]:ring-offset-zinc-950"
+        >
+          <div className="h-full w-[1.5px] bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.75)]" />
+          <div className="slider-grip absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-sky-400/60 bg-zinc-950 text-white shadow-lg transition">
+            <MoveHorizontal className="h-3.5 w-3.5" />
+          </div>
+        </div>
       </div>
     </div>
   );

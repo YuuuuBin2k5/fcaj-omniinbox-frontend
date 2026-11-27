@@ -49,6 +49,16 @@ test("check-env.mjs chặn cấu hình Mock/placeholder và cho qua cấu hình 
   assert.equal(good.ok, true);
   assert.equal(good.errors.length, 0);
 
+  // ID thật vô tình chứa 4 chữ 'x' (ví dụ prefix/token ngẫu nhiên) KHÔNG được báo nhầm placeholder 6 chữ xxxxxx
+  const withFourX = validateProductionEnv({
+    VITE_USE_MOCK: "false",
+    VITE_REST_API_URL: "https://abcxxxxdef.execute-api.ap-southeast-1.amazonaws.com/prod",
+    VITE_WS_URL: "wss://ghi567jkl8.execute-api.ap-southeast-1.amazonaws.com/prod",
+    VITE_COGNITO_USER_POOL_ID: "ap-southeast-1_TestPool1",
+    VITE_COGNITO_CLIENT_ID: "1a2b3c4d5e6f7g8h9i0j",
+  });
+  assert.equal(withFourX.ok, true);
+
   // Chạy trực tiếp CLI check-env.mjs với .env.local hiện tại (VITE_USE_MOCK=true) -> phải exit code 1
   const failRun = spawnSync(process.execPath, ["scripts/check-env.mjs"], {
     cwd: process.cwd(),
