@@ -9,8 +9,8 @@ import JsonCodeBlock from "../../components/JsonCodeBlock.jsx";
 const SCENARIOS = [
   {
     id: "telegram",
-    button: "Gửi tin Telegram thật",
-    tag: "Luồng 2 chiều thật",
+    button: "Telegram thật",
+    tag: "2 chiều thật",
     sourceChannel: "telegram",
     targetConvId: "CONV#telegram#678901234",
     badge: "NEW_MESSAGE",
@@ -18,7 +18,7 @@ const SCENARIOS = [
     hops: [
       {
         stage: "API Gateway",
-        detail: "POST /webhook/telegram · secret_token hợp lệ (timingSafeEqual)",
+        detail: "POST /webhook/telegram · secret_token hợp lệ",
         wireJson: `{
   "route": "POST /webhook/telegram",
   "header": "X-Telegram-Bot-Api-Secret-Token: <verified>",
@@ -28,7 +28,7 @@ const SCENARIOS = [
       },
       {
         stage: "SQS Queue",
-        detail: "omni-inbound-queue · HTTP 200 QUEUED (Visibility 30s)",
+        detail: "omni-inbound-queue · HTTP 200 QUEUED",
         wireJson: `{
   "queue": "omni-inbound-queue",
   "status": "QUEUED",
@@ -38,7 +38,7 @@ const SCENARIOS = [
       },
       {
         stage: "Normalizer",
-        detail: "Claim telegram#678901234#998877 → TransactWriteItems",
+        detail: "Claim khóa → TransactWriteItems DynamoDB",
         wireJson: `{
   "idempotencyKey": "telegram#678901234#998877",
   "state": "PROCESSING -> DONE",
@@ -58,8 +58,8 @@ const SCENARIOS = [
   },
   {
     id: "idempotency",
-    button: "Bắn lặp Shopee (Idempotency)",
-    tag: "Chống trùng lặp",
+    button: "Chống trùng",
+    tag: "Idempotency",
     sourceChannel: "shopee",
     targetConvId: "CONV#shopee#shopee_a1",
     badge: "DUPLICATE SKIPPED",
@@ -67,7 +67,7 @@ const SCENARIOS = [
     hops: [
       {
         stage: "API Gateway",
-        detail: "POST /webhook/shopee × 2 (cùng externalMessageId: dup_01)",
+        detail: "POST /webhook/shopee × 2 (cùng ID dup_01)",
         wireJson: `{
   "route": "POST /webhook/shopee",
   "customerId": "shopee_a1",
@@ -76,7 +76,7 @@ const SCENARIOS = [
       },
       {
         stage: "SQS Queue",
-        detail: "Cả 2 request đều nhận HTTP 200 QUEUED",
+        detail: "Cả 2 request nhận HTTP 200 QUEUED",
         wireJson: `{
   "delivery": "SQS at-least-once",
   "messagesInBatch": 2,
@@ -85,7 +85,7 @@ const SCENARIOS = [
       },
       {
         stage: "Normalizer",
-        detail: "Tin #1 → DONE · Tin #2 → [IDEMPOTENCY] Duplicate skipped",
+        detail: "Tin #1 DONE · Tin #2 SKIPPED",
         wireJson: `{
   "conditionalWrite": "attribute_not_exists(messageKey)",
   "msg1": "DONE",
@@ -94,7 +94,7 @@ const SCENARIOS = [
       },
       {
         stage: "Mini Inbox",
-        detail: "Giữ đúng 1 tin nhắn, unreadCount chỉ tăng 1",
+        detail: "Chỉ lưu 1 bản, unreadCount tăng đúng 1",
         wireJson: `{
   "conversationId": "CONV#shopee#shopee_a1",
   "storedMessagesDelta": 1,
@@ -105,8 +105,8 @@ const SCENARIOS = [
   },
   {
     id: "conflict409",
-    button: "Tranh nhận đồng thời (409)",
-    tag: "Optimistic Locking",
+    button: "Tranh nhận 409",
+    tag: "409 Lock",
     sourceChannel: "telegram",
     targetConvId: "CONV#telegram#678901234",
     badge: "409 SYNCED",
@@ -114,7 +114,7 @@ const SCENARIOS = [
     hops: [
       {
         stage: "Agent Minh",
-        detail: "PATCH expectedAssignedAgent=unassigned → DynamoDB",
+        detail: "PATCH expectedAssignedAgent=unassigned (0ms)",
         wireJson: `{
   "method": "PATCH /conversations/CONV%23telegram%23678901234",
   "assignedAgent": "agent.minh",
@@ -123,7 +123,7 @@ const SCENARIOS = [
       },
       {
         stage: "Agent Lan",
-        detail: "PATCH expectedAssignedAgent=unassigned (đến trễ 40ms)",
+        detail: "PATCH expectedAssignedAgent=unassigned (+40ms)",
         wireJson: `{
   "actor": "agent.lan",
   "assignedAgent": "agent.lan",
@@ -132,7 +132,7 @@ const SCENARIOS = [
       },
       {
         stage: "API Handler",
-        detail: "Minh HTTP 200 · Lan nhận HTTP 409 kèm bản ghi mới nhất",
+        detail: "Minh 200 OK · Lan nhận HTTP 409",
         wireJson: `{
   "httpStatus": 409,
   "error": "ASSIGNMENT_CONFLICT",
@@ -141,7 +141,7 @@ const SCENARIOS = [
       },
       {
         stage: "Mini Inbox",
-        detail: "Cả 2 màn hình đồng bộ về agent.minh, không ghi đè",
+        detail: "Đồng bộ về agent.minh — không ghi đè",
         wireJson: `{
   "event": "CONVERSATION_UPDATED",
   "assignedAgent": "agent.minh",
@@ -152,7 +152,7 @@ const SCENARIOS = [
   },
   {
     id: "reopen",
-    button: "Khách nhắn lại RESOLVED",
+    button: "Mở lại RESOLVED",
     tag: "Auto Reopen",
     sourceChannel: "telegram",
     targetConvId: "CONV#telegram#678901234",
@@ -161,7 +161,7 @@ const SCENARIOS = [
     hops: [
       {
         stage: "Telegram Bot",
-        detail: "Khách nhắn lại vào hội thoại cũ đang trạng thái RESOLVED",
+        detail: "Khách nhắn lại vào hội thoại RESOLVED",
         wireJson: `{
   "conversationId": "CONV#telegram#678901234",
   "previousStatus": "RESOLVED",
@@ -170,7 +170,7 @@ const SCENARIOS = [
       },
       {
         stage: "SQS Queue",
-        detail: "omni-inbound-queue đẩy record vào Normalizer (batch=5)",
+        detail: "omni-inbound-queue → Normalizer (batch=5)",
         wireJson: `{
   "queue": "omni-inbound-queue",
   "channel": "telegram",
@@ -179,7 +179,7 @@ const SCENARIOS = [
       },
       {
         stage: "Normalizer",
-        detail: "Pre-read thấy RESOLVED → đổi status thành OPEN, giữ nguyên assignedAgent",
+        detail: "RESOLVED → OPEN · giữ nguyên agent.minh",
         wireJson: `{
   "nextStatus": "OPEN",
   "assignedAgentPreserved": "agent.minh",
@@ -188,7 +188,7 @@ const SCENARIOS = [
       },
       {
         stage: "Mini Inbox",
-        detail: "Hội thoại bật lại lên hàng chờ OPEN (agent.minh, unread=1)",
+        detail: "Hội thoại bật lại hàng chờ OPEN",
         wireJson: `{
   "event": "NEW_MESSAGE",
   "status": "OPEN",
@@ -247,8 +247,8 @@ export default function InteractivePipelineHero() {
   const [convs, setConvs] = useState(INITIAL_CONVS);
   const [selectedConvId, setSelectedConvId] = useState("CONV#telegram#678901234");
   const [affectedId, setAffectedId] = useState(null);
-  const [showWire, setShowWire] = useState(true);
-  const [eventLog, setEventLog] = useState("Chọn kịch bản bên trên hoặc bấm Auto Demo để xem gói tin đi qua AWS.");
+  const [showWire, setShowWire] = useState(false);
+  const [eventLog, setEventLog] = useState("Chọn kịch bản hoặc bấm Auto Demo để xem luồng AWS.");
   const timersRef = useRef([]);
   const userInteractedRef = useRef(false);
 
@@ -418,7 +418,7 @@ export default function InteractivePipelineHero() {
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
           <span className="ml-2 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
-            Interactive AWS Event Sandbox · Không gọi API trước đăng nhập
+            AWS Event Sandbox · Interactive
           </span>
         </div>
 
@@ -729,15 +729,11 @@ export default function InteractivePipelineHero() {
           </div>
 
           <div className="mt-3 space-y-2">
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50/95 px-3 py-2 font-mono text-[10px] text-zinc-600 dark:border-white/10 dark:bg-[#09090B]/95 dark:text-zinc-400">
-              <div>
-                <span className="text-zinc-400">conversationId (PK):</span>{" "}
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">{inspectedConv.pk}</span>
-              </div>
-              <div className="mt-0.5">
-                <span className="text-zinc-400">Context Isolation:</span> tách riêng từng khách trùng tên{" "}
-                <b className="text-zinc-800 dark:text-zinc-200">Nguyễn Văn A</b>
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-zinc-50/95 px-3 py-2 font-mono text-[10px] text-zinc-600 dark:border-white/10 dark:bg-[#09090B]/95 dark:text-zinc-400">
+              <span>
+                PK: <strong className="text-zinc-900 dark:text-zinc-100">{inspectedConv.pk}</strong>
+              </span>
+              <span>Cô lập theo conversationId</span>
             </div>
 
             {activeScenario === "conflict409" && stepIdx >= 2 && (
@@ -748,8 +744,7 @@ export default function InteractivePipelineHero() {
               >
                 <ShieldAlert className="h-4 w-4 shrink-0" />
                 <span>
-                  Lan nhận HTTP <b className="font-mono">409</b> và tự cập nhật về{" "}
-                  <b className="font-mono">agent.minh</b> — không ghi đè phân công.
+                  Lan nhận <b className="font-mono">HTTP 409</b> và tự đồng bộ về <b className="font-mono">agent.minh</b>.
                 </span>
               </motion.div>
             )}
