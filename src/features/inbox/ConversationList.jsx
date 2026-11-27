@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { CheckCircle2, RefreshCw, RotateCcw, Search, SlidersHorizontal, UserCheck, X } from "lucide-react";
 import { ChannelBadge, ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
-import { formatAgentShort, formatRelativeTime, splitHighlight } from "../../services/uiFormat.js";
+import { formatAgentShort, formatRelativeTime, formatWaitBadge, isAwaitingReply, splitHighlight } from "../../services/uiFormat.js";
 
 const CHANNEL_TABS = [
   { id: "all", label: "Tất cả" },
@@ -72,6 +72,7 @@ export default function ConversationList({
   status,
   queueScope = "all",
   unreadOnly = false,
+  awaitingOnly = false,
   currentAgent = "",
   realtime,
   nextToken,
@@ -82,6 +83,7 @@ export default function ConversationList({
   searchInputRef,
   onToggleQaTools,
   onToggleUnreadOnly,
+  onToggleAwaitingOnly,
   onRefresh,
   onChannelChange,
   onStatusChange,
@@ -118,9 +120,10 @@ export default function ConversationList({
     : filteredList;
 
   const hasActiveFilters = Boolean(
-    trimmedSearch || channel !== "all" || status !== "all" || queueScope !== "all" || unreadOnly
+    trimmedSearch || channel !== "all" || status !== "all" || queueScope !== "all" || unreadOnly || awaitingOnly
   );
   const unreadConvCount = allConversations.filter((c) => Number(c.unreadCount) > 0).length;
+  const awaitingConvCount = allConversations.filter((c) => isAwaitingReply(c)).length;
 
   const statusCounts = {
     all: allConversations.length,
@@ -141,8 +144,15 @@ export default function ConversationList({
       <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-3 dark:border-white/[0.08]">
         <div className="flex items-center gap-1.5">
           <h2 className="text-sm font-bold tracking-tight text-zinc-950 dark:text-white">Hộp thư</h2>
-          <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
-            {allConversations.length}
+          <span
+            title={
+              nextToken
+                ? `Đang hiển thị ${allConversations.length} hội thoại mới nhất — bấm Tải thêm để xem cũ hơn`
+                : `${allConversations.length} hội thoại`
+            }
+            className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-zinc-600 dark:bg-white/10 dark:text-zinc-300"
+          >
+            {nextToken ? `${allConversations.length}+` : allConversations.length}
           </span>
           {onToggleUnreadOnly && (
             <button
@@ -159,6 +169,23 @@ export default function ConversationList({
             >
               <span>Chưa đọc</span>
               <span className="tabular-nums">{unreadConvCount}</span>
+            </button>
+          )}
+          {onToggleAwaitingOnly && (
+            <button
+              type="button"
+              aria-pressed={awaitingOnly}
+              disabled={!awaitingOnly && awaitingConvCount === 0}
+              onClick={onToggleAwaitingOnly}
+              title="Lọc nhanh hội thoại khách đang chờ shop trả lời"
+              className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold transition disabled:opacity-45 ${
+                awaitingOnly
+                  ? "border-amber-500/45 bg-amber-500 text-zinc-950"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-400 dark:border-white/12 dark:bg-[#18181C] dark:text-zinc-300"
+              }`}
+            >
+              <span>Chờ shop</span>
+              <span className="tabular-nums">{awaitingConvCount}</span>
             </button>
           )}
           <span className={`inline-flex items-center gap-1 font-mono text-[10px] font-semibold ${rt.text}`}>
@@ -366,6 +393,8 @@ export default function ConversationList({
             const hasUnread = c.unreadCount > 0;
             const canQuickClaim = (!c.assignedAgent || c.assignedAgent === "unassigned") && Boolean(currentAgent);
             const canQuickResolve = c.status !== "RESOLVED";
+            const waitBadge = formatWaitBadge(c);
+            const awaitingReply = isAwaitingReply(c);
 
             return (
               <div
@@ -491,6 +520,24 @@ export default function ConversationList({
                           <HighlightText text={c.lastMessage} query={trimmedSearch} />
                         </span>
                       )}
+
+                      {awaitingReply && waitBadge ? (
+                        <span
+                          title="Khách đang chờ nhân viên phản hồi"
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[9px] font-bold tabular-nums leading-none ${
+                            waitBadge.urgent
+                              ? "bg-rose-500/15 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300"
+                              : "bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                          }`}
+                        >
+                          {waitBadge.label}
+                        </span>
+                      ) : awaitingReply ? (
+                        <span
+                          title="Khách nhắn gần nhất · đang chờ shop"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
+                        />
+                      ) : null}
 
                       {hasUnread && (
                         <span

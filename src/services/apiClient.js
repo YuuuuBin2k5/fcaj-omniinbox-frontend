@@ -7,6 +7,7 @@ const ENV = (typeof import.meta !== "undefined" && import.meta.env) || {};
 const REST = (ENV.VITE_REST_API_URL || "").replace(/\/$/, "");
 const WS_URL = ENV.VITE_WS_URL || "";
 const AUTH_SCHEME = (ENV.VITE_AUTH_HEADER_PREFIX || "").trim();
+const SIMULATOR_WEBHOOK_AUTH = ENV.VITE_SIMULATOR_WEBHOOK_AUTH === "true";
 const PING_MS = 5 * 60 * 1000;
 
 export const AI_ENABLED = ENV.VITE_ENABLE_AI === "true";
@@ -66,12 +67,16 @@ export const patchConversation = (conversationId, patch) =>
   request("PATCH", convPath(conversationId), patch);
 export const sendReply = ({ conversationId, content, retryOfMessageId, requestId }) =>
   request("POST", "/messages/reply", { conversationId, content, retryOfMessageId, requestId });
-export const requestWsTicket = () => request("POST", "/ws-ticket");
+export const requestWsTicket = (clientType = "portal") =>
+  request("POST", "/ws-ticket", { clientType });
 export const suggestReplies = (conversationId) => request("POST", "/ai/suggest", { conversationId });
 
-// ---------- Simulator Webhook (cô lập để dễ đổi route có Cognito nếu nhóm chọn ở Amendment #4) ----------
+// ---------- Simulator Webhook (hỗ trợ cả /webhook/{channel} công khai hoặc /simulator/webhook/{channel} có Cognito) ----------
 export async function sendSimulatorMessage(channel, payload) {
   if (USE_MOCK) return mock.handle("POST", `/webhook/${encodeURIComponent(channel)}`, payload);
+  if (SIMULATOR_WEBHOOK_AUTH) {
+    return request("POST", `/simulator/webhook/${encodeURIComponent(channel)}`, payload);
+  }
   const res = await fetch(`${REST}/webhook/${encodeURIComponent(channel)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -82,8 +87,13 @@ export async function sendSimulatorMessage(channel, payload) {
   return data;
 }
 
-// ---------- WebSocket (one-time ticket + ping 5p + backoff + resync + dừng khi 401) ----------
-export function connectRealtime({ onEvent, onStatus = () => {}, onResync = () => {} }) {
+// ---------- WebSocket (one-time ticket + clientType + ping 5p + backoff + resync + dừng khi 401) ----------
+export function connectRealtime({
+  onEvent,
+  onStatus = () => {},
+  onResync = () => {},
+  clientType = "portal",
+}) {
   if (USE_MOCK) return mock.subscribe(onEvent, onStatus);
 
   let ws = null;
@@ -106,7 +116,7 @@ export function connectRealtime({ onEvent, onStatus = () => {}, onResync = () =>
     onStatus("connecting");
     let ticket;
     try {
-      ({ ticket } = await requestWsTicket());
+      ({ ticket } = await requestWsTicket(clientType));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         closed = true;

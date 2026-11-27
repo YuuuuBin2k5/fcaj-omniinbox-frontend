@@ -44,6 +44,7 @@ export default function MessageBubble({
   highlightQuery = "",
   isRetrying,
   onRetry,
+  onSyncStatus,
 }) {
   const [copied, setCopied] = useState(false);
   const out = msg.direction === "OUTBOUND";
@@ -154,7 +155,22 @@ export default function MessageBubble({
               </span>
             )}
             {out && ["SENDING", "UNKNOWN"].includes(msg.status) && (
-              <span title={msg.errorDetail || undefined}>Chưa xác nhận kết quả gửi</span>
+              <span className="inline-flex items-center gap-1.5 rounded bg-amber-400/90 px-2 py-0.5 text-[10px] font-semibold text-zinc-950">
+                <span title={msg.errorDetail || "Kiểm tra Telegram phía khách trước khi soạn lại"}>
+                  Chưa xác nhận kết quả gửi
+                </span>
+                {onSyncStatus && (
+                  <button
+                    type="button"
+                    onClick={() => onSyncStatus()}
+                    title="Đồng bộ lại lịch sử từ máy chủ"
+                    className="inline-flex items-center gap-0.5 rounded bg-zinc-950/15 px-1.5 py-0.5 font-mono text-[9px] font-bold hover:bg-zinc-950/25"
+                  >
+                    <RotateCcw className="h-2.5 w-2.5" />
+                    Đồng bộ
+                  </button>
+                )}
+              </span>
             )}
             {failed && (
               <button

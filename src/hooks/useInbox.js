@@ -1,13 +1,14 @@
 // FILE: src/hooks/useInbox.js
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import * as api from "../services/apiClient.js";
-import { USE_MOCK } from "../services/auth.js";
+import { getAgentName, USE_MOCK } from "../services/auth.js";
 import { reducer } from "../services/inboxReducer.js";
 import { ApiError, isNetworkOrTimeoutError } from "../services/errors.js";
 import { latencyTracker } from "../services/latencyTracker.js";
 import { formatAgentShort } from "../services/uiFormat.js";
 
 const initial = { conversations: [], messages: {} };
+const REQUEST_ID_TTL_MS = 60_000;
 
 export function useInbox() {
   const [state, dispatch] = useReducer(reducer, initial);
@@ -54,17 +55,45 @@ export function useInbox() {
 
   useEffect(() => () => toastTimerRef.current && clearTimeout(toastTimerRef.current), []);
 
-  // Baseline tích hợp đầu: "dấu chưa đọc chung của nhóm"
-  const clearUnread = useCallback((conv) => {
-    if (conv && conv.unreadCount > 0) {
-      api
-        .patchConversation(conv.conversationId, { unreadCount: 0 })
-        .then((r) => {
-          if (r?.conversation) dispatch({ type: "conversation", conversation: r.conversation });
-        })
-        .catch(() => {});
+  // Chỉ tự xóa dấu chưa đọc khi CHÍNH nhân viên phụ trách đang xem hội thoại (tránh đồng nghiệp xem lướt làm chìm ca unassigned)
+  const clearUnread = useCallback((conv, { checkVisibility = false } = {}) => {
+    const me = getAgentName();
+    if (!conv || !(Number(conv.unreadCount) > 0) || !me || conv.assignedAgent !== me) return;
+    if (checkVisibility && typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return;
     }
+    api
+      .patchConversation(conv.conversationId, {
+        unreadCount: 0,
+        expectedLastMessageAt: conv.lastMessageAt,
+      })
+      .then((r) => {
+        if (r?.conversation) dispatch({ type: "conversation", conversation: r.conversation });
+      })
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 409 && err.body?.conversation) {
+          dispatch({ type: "conversation", conversation: err.body.conversation });
+        }
+      });
   }, []);
+
+  const toggleUnread = useCallback(
+    async (conv) => {
+      if (!conv) return;
+      const nextUnread = Number(conv.unreadCount) > 0 ? 0 : 1;
+      try {
+        const r = await api.patchConversation(conv.conversationId, { unreadCount: nextUnread });
+        if (r?.conversation) dispatch({ type: "conversation", conversation: r.conversation });
+        showToast({
+          tone: "info",
+          text: nextUnread > 0 ? "Đã đánh dấu chưa đọc" : "Đã đánh dấu đã đọc",
+        });
+      } catch (e) {
+        setNotice(e.message);
+      }
+    },
+    [showToast]
+  );
 
   const refresh = useCallback(async () => {
     const sequence = ++refreshSequence.current;
@@ -89,6 +118,7 @@ export function useInbox() {
   useEffect(() => {
     refresh().catch((e) => setNotice(e.message));
     const rt = api.connectRealtime({
+      clientType: "portal",
       onEvent: (evt) => {
         if (evt.event === "NEW_MESSAGE" && evt.message) {
           const sample = latencyTracker.record(evt.message);
@@ -97,7 +127,7 @@ export function useInbox() {
         dispatch({ type: "event", evt });
         const c = evt.conversation;
         if (evt.event === "NEW_MESSAGE" && c && c.conversationId === selectedRef.current) {
-          clearUnread(c);
+          clearUnread(c, { checkVisibility: true });
         }
       },
       onStatus: setRealtime,
@@ -238,35 +268,57 @@ export function useInbox() {
     const requestKey = JSON.stringify([cid, content.trim()]);
     let requestId;
     if (!retryOfMessageId && !USE_MOCK) {
-      requestId = sendRequests.current.get(requestKey) || `${Date.now()}-${crypto.randomUUID()}`;
-      sendRequests.current.set(requestKey, requestId);
+      const nowMs = Date.now();
+      const cached = sendRequests.current.get(requestKey);
+      if (cached && nowMs - cached.at < REQUEST_ID_TTL_MS) {
+        requestId = cached.id;
+      } else {
+        requestId = `${nowMs}-${crypto.randomUUID()}`;
+        sendRequests.current.set(requestKey, { id: requestId, at: nowMs });
+      }
     }
 
     try {
       const r = await api.sendReply({ conversationId: cid, content, retryOfMessageId, requestId });
+      if (r?.conversation) {
+        dispatch({ type: "conversation", conversation: r.conversation });
+      }
       if (r?.message) {
         dispatch({
           type: "event",
           evt: { event: "OUTBOUND_MESSAGE", conversation: r.conversation, message: r.message },
         });
-      }
-      if (r?.message && ["SENT", "FAILED"].includes(r.message.status)) {
         sendRequests.current.delete(requestKey);
       }
       if (r?.message?.status === "UNKNOWN" || r?.message?.status === "SENDING") {
-        setNotice("Chưa xác nhận được Telegram đã nhận tin. Kiểm tra phía khách trước khi gửi lại.");
+        setNotice("Chưa xác nhận được Telegram đã nhận tin. Bấm Đồng bộ trên tin nhắn để kiểm tra trước khi gửi lại.");
       } else if (r && r.ok === false) {
-        setNotice(`Gửi tin tới kênh ngoài thất bại (${r.message?.errorDetail || "FAILED"}). Bạn có thể bấm Thử lại trên tin vừa tạo.`);
+        setNotice(
+          `Gửi tin tới kênh ngoài thất bại (${r.message?.errorDetail || "FAILED"}). Bạn có thể bấm Thử lại trên tin vừa tạo.`
+        );
       }
       return { ok: Boolean(r?.ok), message: r?.message, recordedOnServer: Boolean(r?.message) };
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409 && e.body?.message) {
-        dispatch({ type: "event", evt: { event: "OUTBOUND_MESSAGE", message: e.body.message } });
-        setNotice("Tin này đang được xử lý hoặc chưa xác nhận kết quả gửi.");
-        return { ok: false, recordedOnServer: true, message: e.body.message };
+      if (e instanceof ApiError && e.status === 409) {
+        sendRequests.current.delete(requestKey);
+        if (e.body?.conversation) {
+          dispatch({ type: "conversation", conversation: e.body.conversation });
+        }
+        if (e.body?.message) {
+          dispatch({ type: "event", evt: { event: "OUTBOUND_MESSAGE", message: e.body.message } });
+          setNotice("Tin này đang được xử lý hoặc chưa xác nhận kết quả gửi.");
+          return { ok: false, recordedOnServer: true, message: e.body.message };
+        }
+        if (e.body?.error === "CONVERSATION_ASSIGNED_TO_OTHER") {
+          setNotice(
+            `Không thể gửi (409): Hội thoại đang do ${
+              e.body?.conversation?.assignedAgent || "người khác"
+            } phụ trách. Bấm 'Nhận lại' trước khi gửi.`
+          );
+          return { ok: false, conflict: true };
+        }
       }
       if (isNetworkOrTimeoutError(e) || (e instanceof ApiError && e.status >= 500)) {
-        // Không tự kết luận đã gửi hay chưa dựa vào khớp text; đồng bộ lại lịch sử và giữ nháp để nhân viên tự quyết
         try {
           const m = await api.listMessages(cid, { limit: 50 });
           dispatch({ type: "messages", id: cid, list: m.messages || [] });
@@ -299,6 +351,11 @@ export function useInbox() {
   }, []);
 
   const clearUnconfirmed = useCallback((cid) => {
+    for (const k of sendRequests.current.keys()) {
+      if (k.startsWith(`[${JSON.stringify(cid)},`)) {
+        sendRequests.current.delete(k);
+      }
+    }
     setUnconfirmedByConv((p) => {
       if (!p[cid]) return p;
       const copy = { ...p };
@@ -331,6 +388,7 @@ export function useInbox() {
     loadMore,
     loadOlder,
     setStatus,
+    toggleUnread,
     assign,
     send,
     refresh,

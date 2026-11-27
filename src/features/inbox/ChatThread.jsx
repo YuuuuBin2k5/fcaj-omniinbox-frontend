@@ -27,6 +27,7 @@ export default function ChatThread({
   retryingMessageId,
   onLoadOlder,
   onRetry,
+  onSyncStatus,
 }) {
   const containerRef = useRef(null);
   const nearBottomRef = useRef(true);
@@ -171,6 +172,7 @@ export default function ChatThread({
                 highlightQuery={searchQuery}
                 isRetrying={retryingMessageId === item.msg.messageId}
                 onRetry={onRetry}
+                onSyncStatus={onSyncStatus}
               />
             )
           )

@@ -1,5 +1,5 @@
 // FILE: src/services/mockBackend.js
-// Giả lập đúng 7 endpoint + 3 event WS qua localStorage + BroadcastChannel.
+// Giả lập đồng bộ 100% hợp đồng 7 endpoint + 3 event WS qua localStorage + BroadcastChannel.
 import { ApiError } from "./errors.js";
 import { getAgentName } from "./auth.js";
 
@@ -67,26 +67,68 @@ export function subscribe(onEvent, onStatus = () => {}) {
   };
 }
 
+function extractTelegramContent(m = {}) {
+  if (typeof m.text === "string" && m.text.trim()) {
+    return { content: m.text, mediaType: undefined };
+  }
+  let media = null;
+  if (Array.isArray(m.photo) && m.photo.length > 0) {
+    media = { mediaType: "photo", label: "Hình ảnh" };
+  } else if (m.document) {
+    const fileName = String(m.document.file_name || "").trim();
+    media = { mediaType: "document", label: fileName ? `Tệp: ${fileName}` : "Tệp đính kèm" };
+  } else if (m.voice) {
+    media = { mediaType: "voice", label: "Tin nhắn thoại" };
+  } else if (m.audio) {
+    media = { mediaType: "audio", label: "Âm thanh" };
+  } else if (m.video || m.video_note) {
+    media = { mediaType: "video", label: "Video" };
+  } else if (m.sticker) {
+    const emoji = m.sticker.emoji ? ` ${m.sticker.emoji}` : "";
+    media = { mediaType: "sticker", label: `Sticker${emoji}` };
+  } else if (m.location) {
+    media = { mediaType: "location", label: "Vị trí" };
+  } else if (m.contact) {
+    media = { mediaType: "contact", label: "Danh bạ" };
+  }
+  const caption = typeof m.caption === "string" ? m.caption.trim() : "";
+  if (media && caption) return { content: `[${media.label}] ${caption}`, mediaType: media.mediaType };
+  if (media) {
+    return {
+      content: `[Khách gửi ${media.label} — chưa hỗ trợ hiển thị media]`,
+      mediaType: media.mediaType,
+    };
+  }
+  if (caption) return { content: caption, mediaType: undefined };
+  return null;
+}
+
 // ---- 1. POST /webhook/{channel} ----
 function ingest(channel, payload = {}) {
   const ch = String(channel || "").toLowerCase();
   if (!CHANNELS.includes(ch)) throw new ApiError(404, { error: "Unknown channel" });
   const db = load();
   const now = Date.now();
-  let senderId, msgId, name, text;
+  let senderId, msgId, name, text, mediaType;
   let createdAtMs = now;
   let clientSentAtMs;
 
   if (ch === "telegram") {
     const m = payload.message;
-    if (!m || typeof m.text !== "string" || !m.text.trim() || m.chat?.id === undefined || m.message_id === undefined) {
+    if (!m || m.chat?.id === undefined || m.message_id === undefined) {
       return { ok: true, status: "IGNORED" };
     }
+    const extracted = extractTelegramContent(m);
+    if (!extracted) return { ok: true, status: "IGNORED" };
     senderId = String(m.chat.id);
     msgId = String(m.message_id);
     name = [m.from?.first_name, m.from?.last_name].filter(Boolean).join(" ") || m.from?.username || `Telegram #${senderId}`;
-    text = m.text;
-    createdAtMs = (m.date || Math.floor(now / 1000)) * 1000;
+    text = extracted.content;
+    mediaType = extracted.mediaType;
+    const rawSec = m.date !== undefined ? Number(m.date) : NaN;
+    if (Number.isFinite(rawSec)) {
+      createdAtMs = Math.floor(now / 1000) === rawSec ? now : rawSec * 1000;
+    }
   } else {
     if (payload.forceError === true) {
       return {
@@ -129,6 +171,7 @@ function ingest(channel, payload = {}) {
     senderId,
     senderName: name,
     content: text,
+    ...(mediaType ? { mediaType } : {}),
     status: "RECEIVED",
     createdAt,
     ...(clientSentAtMs !== undefined ? { clientSentAtMs } : {}),
@@ -142,6 +185,8 @@ function ingest(channel, payload = {}) {
     customerName: name,
     lastMessage: text,
     lastMessageAt: createdAt,
+    lastMessageDirection: "INBOUND",
+    lastInboundAt: createdAt,
     status,
     assignedAgent: prev ? prev.assignedAgent : "unassigned",
     unreadCount: (prev ? prev.unreadCount : 0) + 1,
@@ -174,7 +219,7 @@ function listConversations(q) {
 function listMessages(id, q) {
   const db = load();
   if (!db.conversations[id]) return { conversationId: id, messages: [], nextToken: null };
-  const all = (db.messages[id] || []).slice().sort((a, b) => a.messageId.localeCompare(b.messageId));
+  const all = (db.messages[id] || []).slice().sort((a, b) => a.messageId.localeCompare(b.messageId, "en", { numeric: true }));
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || 50, 1), 100);
   const end = q.nextToken ? Number(atob(q.nextToken)) : all.length;
   const start = Math.max(0, end - limit);
@@ -191,7 +236,7 @@ function patchConversation(id, body = {}) {
   const conv = db.conversations[id];
   if (!conv) throw new ApiError(404, { error: "Conversation not found" });
 
-  const { status, assignedAgent, expectedAssignedAgent, unreadCount } = body;
+  const { status, assignedAgent, expectedAssignedAgent, expectedLastMessageAt, unreadCount } = body;
   if (status === undefined && assignedAgent === undefined && unreadCount === undefined) {
     throw new ApiError(400, { error: "Nothing to update" });
   }
@@ -211,6 +256,9 @@ function patchConversation(id, body = {}) {
   if (expectedAssignedAgent !== undefined && conv.assignedAgent !== expectedAssignedAgent) {
     throw new ApiError(409, { error: "ASSIGNMENT_CONFLICT", conversation: publicConv(conv) });
   }
+  if (expectedLastMessageAt !== undefined && conv.lastMessageAt !== expectedLastMessageAt) {
+    throw new ApiError(409, { error: "STALE_CONVERSATION", conversation: publicConv(conv) });
+  }
 
   if (status !== undefined) conv.status = status;
   if (assignedAgent !== undefined) conv.assignedAgent = assignedAgent.trim();
@@ -223,19 +271,18 @@ function patchConversation(id, body = {}) {
 }
 
 // ---- 5. POST /messages/reply ----
-// Cờ test trong localStorage:
-// - omni_mock_fail_next="1"    -> trả HTTP 200 { ok:false, message:{ status:"FAILED" } }
-// - omni_mock_timeout_next="1" -> ném lỗi mạng giả lập (đã có hoặc chưa có trong DB tùy tình huống)
+// Đồng bộ tuyệt đối với omni-outbound-sender:
+// - Ownership guard 409 nếu đang thuộc nhân viên khác; pre-claim nếu đang unassigned.
+// - Không chuyển OPEN -> IN_PROGRESS, không xóa unreadCount, không ghi đè lastMessage khi FAILED.
 function reply(body = {}) {
   const st = storage();
   if (st.getItem("omni_mock_timeout_next") === "1") {
     st.removeItem("omni_mock_timeout_next");
-    const err = new TypeError("Mock network timeout while calling /messages/reply");
-    throw err;
+    throw new TypeError("Mock network timeout while calling /messages/reply");
   }
 
   const db = load();
-  const { conversationId, content, retryOfMessageId } = body;
+  const { conversationId, content, retryOfMessageId, requestId } = body;
   const conv = db.conversations[conversationId];
   if (!conv) throw new ApiError(404, { error: "Conversation not found" });
 
@@ -244,12 +291,36 @@ function reply(body = {}) {
   if (trimmed.length > 4000) throw new ApiError(400, { error: "Invalid content" });
 
   const agent = getAgentName() || "agent";
+  if (conv.assignedAgent && conv.assignedAgent !== "unassigned" && conv.assignedAgent !== agent) {
+    throw new ApiError(409, {
+      error: "CONVERSATION_ASSIGNED_TO_OTHER",
+      message: `Conversation is assigned to ${conv.assignedAgent}`,
+      conversation: publicConv(conv),
+    });
+  }
+  if (!conv.assignedAgent || conv.assignedAgent === "unassigned") {
+    conv.assignedAgent = agent;
+  }
+
+  const list = db.messages[conversationId] || (db.messages[conversationId] = []);
+  if (!retryOfMessageId && requestId) {
+    const reqMsgId = mid(String(requestId).slice(0, 13), `OUT-${requestId}`);
+    const existingReq = list.find((m) => m.messageId === reqMsgId);
+    if (existingReq && existingReq.agentId === agent && existingReq.content === trimmed) {
+      save(db);
+      return {
+        ok: existingReq.status === "SENT",
+        message: { ...existingReq },
+        conversation: publicConv(conv),
+      };
+    }
+  }
+
   const fail = st.getItem("omni_mock_fail_next") === "1";
   if (fail) st.removeItem("omni_mock_fail_next");
 
   const status = fail ? "FAILED" : "SENT";
   const errorDetail = fail ? "Mock: lỗi gửi giả lập (Telegram API timeout/error)" : undefined;
-  const list = db.messages[conversationId] || (db.messages[conversationId] = []);
   const nowIso = new Date().toISOString();
   const deliveredVia = conv.channel === "telegram" ? "telegram" : "simulator";
 
@@ -267,10 +338,11 @@ function reply(body = {}) {
     msg.retriedAt = nowIso;
   } else {
     const ms = Date.now();
-    const outId = `OUT-${ms}-${Math.floor(Math.random() * 1000)}`;
+    const outId = requestId ? `OUT-${requestId}` : `OUT-${ms}-${Math.floor(Math.random() * 1000)}`;
+    const msgId = requestId ? mid(String(requestId).slice(0, 13), outId) : mid(ms, outId);
     msg = {
       conversationId,
-      messageId: mid(ms, outId),
+      messageId: msgId,
       channel: conv.channel,
       channelMessageId: outId,
       direction: "OUTBOUND",
@@ -286,29 +358,27 @@ function reply(body = {}) {
     list.push(msg);
   }
 
-  // Đồng bộ quy tắc với backend (Duy.md + Amendment #2/#3):
-  // - Không ghi đè phân công nếu đã có người nhận
-  // - Không xóa unreadCount hoặc ghi đè lastMessage nếu status === "FAILED"
-  if (conv.status === "OPEN") conv.status = "IN_PROGRESS";
-  if (!conv.assignedAgent || conv.assignedAgent === "unassigned") conv.assignedAgent = agent;
   if (status === "SENT") {
+    if (conv.status === "OPEN") conv.status = "IN_PROGRESS";
     conv.unreadCount = 0;
     if (!retryOfMessageId) {
       conv.lastMessage = `[NV] ${trimmed}`.slice(0, 200);
       conv.lastMessageAt = nowIso;
+      conv.lastMessageDirection = "OUTBOUND";
     }
   }
 
   save(db);
   const pub = publicConv(conv);
   emit({ event: "OUTBOUND_MESSAGE", conversation: pub, message: { ...msg } });
-  return { ok: status === "SENT", message: { ...msg } };
+  return { ok: status === "SENT", message: { ...msg }, conversation: pub };
 }
 
 // ---- 6. POST /ws-ticket ----
-function wsTicket() {
+function wsTicket(body = {}) {
   const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-  return { ticket: `mock-${id}`, expiresAt: Date.now() + 60000 };
+  const clientType = body?.clientType === "simulator" ? "simulator" : "portal";
+  return { ticket: `mock-${id}`, expiresAt: Date.now() + 60000, clientType };
 }
 
 // ---- 7. POST /ai/suggest (pha 2) ----
@@ -352,7 +422,7 @@ export function seedManyForPagination(count = 60) {
     const cid = `CONV#zalo#pag_user_${String(i).padStart(3, "0")}`;
     const ms = base + i * 60000;
     const iso = new Date(ms).toISOString();
-    const isOldResolved = i === 5; // nằm ở trang 2 khi sort mới nhất trước (limit 50)
+    const isOldResolved = i === 5;
     db.conversations[cid] = {
       conversationId: cid,
       gsi1pk: "CONV",
@@ -361,6 +431,8 @@ export function seedManyForPagination(count = 60) {
       customerName: `Khách phân trang #${i} (Mô phỏng)`,
       lastMessage: isOldResolved ? "Đã chốt xong đơn ở trang 2" : `Tin nhắn mẫu #${i}`,
       lastMessageAt: iso,
+      lastMessageDirection: "INBOUND",
+      lastInboundAt: iso,
       status: isOldResolved ? "RESOLVED" : "OPEN",
       assignedAgent: "unassigned",
       unreadCount: isOldResolved ? 0 : 1,
@@ -397,7 +469,7 @@ export async function handle(method, pathWithQuery, body = {}) {
   if (method === "GET" && parts[0] === "conversations" && parts[2] === "messages") return listMessages(parts[1], q);
   if (method === "PATCH" && parts[0] === "conversations" && parts.length === 2) return patchConversation(parts[1], body);
   if (method === "POST" && parts[0] === "messages" && parts[1] === "reply") return reply(body);
-  if (method === "POST" && parts[0] === "ws-ticket") return wsTicket();
+  if (method === "POST" && parts[0] === "ws-ticket") return wsTicket(body);
   if (method === "POST" && parts[0] === "ai" && parts[1] === "suggest") return suggest(body);
   throw new ApiError(404, { error: "Route not found" });
 }
