@@ -56,17 +56,22 @@ export default function MessageBubble({ msg, isGroupStart = true, isGroupEnd = t
           <div className="w-7 shrink-0" aria-hidden="true" />
         ))}
 
-      {/* Subtle Copy Action (Outbound Left) */}
+      {/* Subtle Copy Action & Grouped Hover Timestamp (Outbound Left) */}
       {out && (
-        <button
-          type="button"
-          aria-label="Sao chép tin nhắn"
-          title="Sao chép"
-          onClick={copyContent}
-          className="mb-1 rounded-md p-1 text-zinc-400 opacity-0 transition hover:bg-zinc-200/70 hover:text-zinc-700 group-hover:opacity-100 focus:opacity-100 dark:hover:bg-white/10 dark:hover:text-zinc-200"
-        >
-          {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-        </button>
+        <div className="mb-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+          {!isGroupStart && timeText && (
+            <span className="font-mono text-[10px] tabular-nums text-zinc-400">{timeText}</span>
+          )}
+          <button
+            type="button"
+            aria-label="Sao chép tin nhắn"
+            title="Sao chép"
+            onClick={copyContent}
+            className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-200/70 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+          >
+            {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+          </button>
+        </div>
       )}
 
       <div
@@ -119,6 +124,9 @@ export default function MessageBubble({ msg, isGroupStart = true, isGroupEnd = t
                 Đã gửi
               </span>
             )}
+            {out && ["SENDING", "UNKNOWN"].includes(msg.status) && (
+              <span title={msg.errorDetail || undefined}>Chưa xác nhận kết quả gửi</span>
+            )}
             {failed && (
               <button
                 type="button"
@@ -144,17 +152,22 @@ export default function MessageBubble({ msg, isGroupStart = true, isGroupEnd = t
         )}
       </div>
 
-      {/* Subtle Copy Action (Inbound Right) */}
+      {/* Subtle Copy Action & Grouped Hover Timestamp (Inbound Right) */}
       {!out && (
-        <button
-          type="button"
-          aria-label="Sao chép tin nhắn"
-          title="Sao chép"
-          onClick={copyContent}
-          className="mb-1 rounded-md p-1 text-zinc-400 opacity-0 transition hover:bg-zinc-200/70 hover:text-zinc-700 group-hover:opacity-100 focus:opacity-100 dark:hover:bg-white/10 dark:hover:text-zinc-200"
-        >
-          {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-        </button>
+        <div className="mb-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+          <button
+            type="button"
+            aria-label="Sao chép tin nhắn"
+            title="Sao chép"
+            onClick={copyContent}
+            className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-200/70 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+          >
+            {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+          </button>
+          {!isGroupStart && timeText && (
+            <span className="font-mono text-[10px] tabular-nums text-zinc-400">{timeText}</span>
+          )}
+        </div>
       )}
     </motion.div>
   );

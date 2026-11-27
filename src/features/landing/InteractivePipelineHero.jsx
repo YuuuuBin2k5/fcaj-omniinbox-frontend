@@ -150,6 +150,54 @@ const SCENARIOS = [
       },
     ],
   },
+  {
+    id: "reopen",
+    button: "Khách nhắn lại RESOLVED",
+    tag: "Auto Reopen",
+    sourceChannel: "telegram",
+    targetConvId: "CONV#telegram#678901234",
+    badge: "REOPENED -> OPEN",
+    badgeCls: "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    hops: [
+      {
+        stage: "Telegram Bot",
+        detail: "Khách nhắn lại vào hội thoại cũ đang trạng thái RESOLVED",
+        wireJson: `{
+  "conversationId": "CONV#telegram#678901234",
+  "previousStatus": "RESOLVED",
+  "assignedAgent": "agent.minh"
+}`,
+      },
+      {
+        stage: "SQS Queue",
+        detail: "omni-inbound-queue đẩy record vào Normalizer (batch=5)",
+        wireJson: `{
+  "queue": "omni-inbound-queue",
+  "channel": "telegram",
+  "trigger": "reopen-check"
+}`,
+      },
+      {
+        stage: "Normalizer",
+        detail: "Pre-read thấy RESOLVED → đổi status thành OPEN, giữ nguyên assignedAgent",
+        wireJson: `{
+  "nextStatus": "OPEN",
+  "assignedAgentPreserved": "agent.minh",
+  "dynamoTx": "TransactWriteItems + ADD unreadCount 1"
+}`,
+      },
+      {
+        stage: "Mini Inbox",
+        detail: "Hội thoại bật lại lên hàng chờ OPEN (agent.minh, unread=1)",
+        wireJson: `{
+  "event": "NEW_MESSAGE",
+  "status": "OPEN",
+  "assignedAgent": "agent.minh",
+  "unreadCount": 1
+}`,
+      },
+    ],
+  },
 ];
 
 const CONVERGENCE_CHANNELS = [
@@ -202,15 +250,31 @@ export default function InteractivePipelineHero() {
   const [showWire, setShowWire] = useState(true);
   const [eventLog, setEventLog] = useState("Chọn kịch bản bên trên hoặc bấm Auto Demo để xem gói tin đi qua AWS.");
   const timersRef = useRef([]);
+  const userInteractedRef = useRef(false);
 
   function clearTimers() {
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
   }
 
-  useEffect(() => () => clearTimers(), []);
+  useEffect(() => {
+    const reduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduced) {
+      const bootTimer = setTimeout(() => {
+        if (!userInteractedRef.current) {
+          scheduleScenario("telegram");
+        }
+      }, 750);
+      timersRef.current.push(bootTimer);
+    }
+    return () => clearTimers();
+  }, []);
 
   function resetSandbox() {
+    userInteractedRef.current = true;
     clearTimers();
     setRunning(false);
     setAutoRunning(false);
@@ -229,6 +293,16 @@ export default function InteractivePipelineHero() {
     setAffectedId(null);
     setSelectedConvId(sc.targetConvId);
     setEventLog(`[${sc.hops[0].stage}] ${sc.hops[0].detail}`);
+
+    if (id === "reopen") {
+      setConvs((prev) =>
+        prev.map((c) =>
+          c.id === "CONV#telegram#678901234"
+            ? { ...c, status: "RESOLVED", agent: "agent.minh", unread: 0, text: "Cảm ơn shop nhé!" }
+            : c
+        )
+      );
+    }
 
     sc.hops.forEach((hop, idx) => {
       if (idx === 0) return;
@@ -263,6 +337,20 @@ export default function InteractivePipelineHero() {
                   : c
               )
             );
+          } else if (id === "reopen") {
+            setConvs((prev) =>
+              prev.map((c) =>
+                c.id === "CONV#telegram#678901234"
+                  ? {
+                      ...c,
+                      status: "OPEN",
+                      agent: "agent.minh",
+                      unread: 1,
+                      text: "Shop ơi đơn lúc nãy mình đổi địa chỉ nhận nhé!",
+                    }
+                  : c
+              )
+            );
           }
           onComplete?.();
         }
@@ -272,12 +360,14 @@ export default function InteractivePipelineHero() {
   }
 
   function runScenario(id) {
+    userInteractedRef.current = true;
     clearTimers();
     setAutoRunning(false);
     scheduleScenario(id);
   }
 
   function runAutoDemo() {
+    userInteractedRef.current = true;
     clearTimers();
     setConvs(INITIAL_CONVS);
     setAutoRunning(true);
@@ -286,7 +376,12 @@ export default function InteractivePipelineHero() {
         scheduleScenario("idempotency", () => {
           const t2 = setTimeout(() => {
             scheduleScenario("conflict409", () => {
-              setAutoRunning(false);
+              const t3 = setTimeout(() => {
+                scheduleScenario("reopen", () => {
+                  setAutoRunning(false);
+                });
+              }, 700);
+              timersRef.current.push(t3);
             });
           }, 700);
           timersRef.current.push(t2);

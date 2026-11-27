@@ -75,3 +75,39 @@ export function evaluatePasswordRules(password) {
     hasNumber: /\d/.test(pwd),
   };
 }
+
+/**
+ * Định dạng thời gian tương đối ngắn gọn cho danh sách hội thoại CSKH.
+ */
+export function formatRelativeTime(isoOrMs, nowMs = Date.now()) {
+  if (isoOrMs === undefined || isoOrMs === null || isoOrMs === "") return "";
+  const ms = typeof isoOrMs === "number" ? isoOrMs : Date.parse(isoOrMs);
+  if (!Number.isFinite(ms)) return "";
+
+  const diffMs = nowMs - ms;
+  if (diffMs >= 0 && diffMs < 60_000) return "Vừa xong";
+  if (diffMs >= 0 && diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}p`;
+
+  const d = new Date(ms);
+  const n = new Date(nowMs);
+  const targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const today = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+
+  if (targetDay === today) {
+    return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  }
+  if (today - targetDay === 86_400_000) return "Hôm qua";
+
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Lọc danh sách mẫu trả lời nhanh cục bộ theo lệnh gõ sau dấu "/".
+ */
+export function filterLocalMacros(macros = [], draft = "") {
+  const raw = String(draft ?? "");
+  if (!raw.startsWith("/")) return macros;
+  const query = raw.slice(1).trim().toLowerCase();
+  if (!query) return macros;
+  return macros.filter((m) => String(m.cmd || "").toLowerCase().includes(query));
+}

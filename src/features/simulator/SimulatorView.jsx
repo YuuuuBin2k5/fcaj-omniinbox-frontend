@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import {
   AlertTriangle,
+  ArrowRight,
   Check,
   CheckCheck,
   CheckCircle2,
@@ -15,7 +16,8 @@ import {
   Terminal,
   Trash2,
 } from "lucide-react";
-import { connectRealtime, sendSimulatorMessage } from "../../services/apiClient.js";
+import { connectRealtime, listMessages, sendSimulatorMessage } from "../../services/apiClient.js";
+import { mergeMessageList } from "../../services/inboxReducer.js";
 import { formatAgentShort } from "../../services/uiFormat.js";
 import { ChannelIcon } from "../../components/ChannelBadge.jsx";
 import JsonCodeBlock from "../../components/JsonCodeBlock.jsx";
@@ -37,7 +39,7 @@ const CHANNELS = [
   },
   {
     id: "webchat",
-    name: "Website LiveChat",
+    name: "WebChat",
     label: "Website LiveChat (Mô phỏng)",
     headerBg: "bg-[#7C3AED]",
     activeCard: "border-violet-500/50 bg-violet-500/10 text-violet-700 dark:text-violet-300",
@@ -55,10 +57,18 @@ const WS_STATUS_META = {
   },
 };
 
+const QUICK_SCENARIO_CHIPS = [
+  { label: "Hỏi size áo", text: "Áo khoác này còn size M màu đen không shop?" },
+  { label: "Hỏi phí ship", text: "Ship về Quận 1 TP.HCM mất bao lâu và phí bao nhiêu ạ?" },
+  { label: "Đặt đơn", text: "Cho mình đặt 1 cái size L, thanh toán COD nhé shop!" },
+  { label: "Mở lại RESOLVED", text: "Shop ơi cho mình hỏi thêm về đơn vừa chốt lúc nãy ạ!" },
+];
+
 const FAULT_UI = ((typeof import.meta !== "undefined" && import.meta.env) || {}).VITE_ENABLE_FAULT_UI === "true";
 const rid = () => `sim_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+const formatClock = () => new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
-export default function SimulatorView() {
+export default function SimulatorView({ onOpenInbox }) {
   const [channel, setChannel] = useState("shopee");
   const [customerId, setCustomerId] = useState("shopee_user_889");
   const [customerName, setCustomerName] = useState("Trần Thị Bích - Khách Shopee (Mô phỏng)");
@@ -73,6 +83,12 @@ export default function SimulatorView() {
   const [milestone, setMilestone] = useState("Chưa gửi");
   const [consoleTab, setConsoleTab] = useState("log");
   const [copiedMsgId, setCopiedMsgId] = useState(false);
+  const [clockTime, setClockTime] = useState(formatClock);
+
+  useEffect(() => {
+    const id = setInterval(() => setClockTime(formatClock()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const cleanCustomerId = customerId.trim() || "guest_001";
   const currentConvId = `CONV#${channel}#${cleanCustomerId}`;
@@ -88,27 +104,34 @@ export default function SimulatorView() {
   };
 
   useEffect(() => {
+    let active = true;
+    function receiveReplies(id, messages) {
+      const outgoing = messages.filter((message) => message.direction === "OUTBOUND");
+      if (!active || !outgoing.length) return;
+      setRepliesByConv((prev) => ({ ...prev, [id]: mergeMessageList(prev[id], outgoing) }));
+      if (id === currentConvRef.current && outgoing.some((message) => message.status === "SENT")) {
+        setMilestoneStep(3);
+        setMilestone("Mốc 3: Đã nhận phản hồi từ Agent Portal!");
+      }
+    }
     const rt = connectRealtime({
       onStatus: setWsStatus,
       onEvent: (evt) => {
-        if (evt.event !== "OUTBOUND_MESSAGE" || !evt.message) return;
-        const targetConvId = evt.message.conversationId;
-        if (!targetConvId) return;
-        setRepliesByConv((prev) => {
-          const list = prev[targetConvId] || [];
-          const exists = list.some((m) => m.messageId === evt.message.messageId);
-          const nextList = exists
-            ? list.map((m) => (m.messageId === evt.message.messageId ? evt.message : m))
-            : [...list, evt.message];
-          return { ...prev, [targetConvId]: nextList };
-        });
-        if (targetConvId === currentConvRef.current) {
-          setMilestoneStep(3);
-          setMilestone("Mốc 3: Đã nhận phản hồi từ Agent Portal qua WebSocket!");
+        if (evt.event === "OUTBOUND_MESSAGE" && evt.message?.conversationId) {
+          receiveReplies(evt.message.conversationId, [evt.message]);
         }
       },
+      onResync: () => {
+        const id = currentConvRef.current;
+        listMessages(id, { limit: 50 })
+          .then((result) => receiveReplies(id, result.messages || []))
+          .catch(() => {});
+      },
     });
-    return () => rt.close();
+    return () => {
+      active = false;
+      rt.close();
+    };
   }, []);
 
   const replies = repliesByConv[currentConvId] || [];
@@ -203,8 +226,14 @@ export default function SimulatorView() {
     if (busy || !text.trim()) return;
     setBusy(true);
     const snap = buildPayload();
-    await postOnce(snap, "Gửi #1", "QUEUED", true);
-    await postOnce({ ...snap, sentAtMs: Date.now() }, "Gửi #2 (trùng ID)", "DUP", false);
+    const ok1 = await postOnce(snap, "Gửi #1", "QUEUED", true);
+    const ok2 = await postOnce({ ...snap, sentAtMs: Date.now() }, "Gửi #2 (trùng ID)", "DUP", false);
+    if (ok1 && ok2) {
+      setMilestoneStep(2);
+      setMilestone(
+        `Đã bắn lặp 2 lần cùng ID (${snap.externalMessageId}) — Normalizer khử trùng, chỉ lưu 1 bản ghi trong Inbox.`
+      );
+    }
     setBusy(false);
   }
 
@@ -367,9 +396,23 @@ export default function SimulatorView() {
           </div>
 
           <div>
-            <label className="mb-1 block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-              Nội dung tin nhắn giả lập
-            </label>
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+              <label className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                Nội dung tin nhắn giả lập
+              </label>
+              <div className="flex flex-wrap items-center gap-1">
+                {QUICK_SCENARIO_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => setText(chip.text)}
+                    className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-950 dark:border-white/10 dark:bg-[#18181C] dark:text-zinc-300 dark:hover:text-white"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <textarea
               aria-label="Nội dung tin giả lập"
               className="w-full rounded-xl border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 dark:border-white/15 dark:bg-[#09090B] dark:text-white"
@@ -423,15 +466,27 @@ export default function SimulatorView() {
                 : "border-zinc-200 bg-zinc-50 dark:border-white/10 dark:bg-[#09090B]"
             }`}
           >
-            <div className="mb-1.5 flex items-center gap-2 font-semibold text-zinc-700 dark:text-zinc-200">
-              {milestoneStep === -1 ? (
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-500" />
-              ) : (
-                <CheckCircle2
-                  className={`h-3.5 w-3.5 shrink-0 ${milestoneStep >= 2 ? "text-emerald-500" : "text-zinc-400"}`}
-                />
+            <div className="mb-1.5 flex items-center justify-between gap-2 font-semibold text-zinc-700 dark:text-zinc-200">
+              <div className="flex min-w-0 items-center gap-2">
+                {milestoneStep === -1 ? (
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-500" />
+                ) : (
+                  <CheckCircle2
+                    className={`h-3.5 w-3.5 shrink-0 ${milestoneStep >= 2 ? "text-emerald-500" : "text-zinc-400"}`}
+                  />
+                )}
+                <span className="truncate font-normal text-zinc-600 dark:text-zinc-300">{milestone}</span>
+              </div>
+              {milestoneStep >= 2 && onOpenInbox && (
+                <button
+                  type="button"
+                  onClick={onOpenInbox}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-zinc-300 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-zinc-900 hover:bg-zinc-100 dark:border-white/15 dark:bg-[#18181C] dark:text-zinc-100"
+                >
+                  <span>Mở Hộp thư CSKH</span>
+                  <ArrowRight className="h-3 w-3" />
+                </button>
               )}
-              <span className="truncate font-normal text-zinc-600 dark:text-zinc-300">{milestone}</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5 font-mono text-[10px]">
               <div
@@ -544,7 +599,7 @@ export default function SimulatorView() {
             {/* Device Status Bar + Dynamic Island */}
             <div className={`${activeChannelMeta.headerBg} px-4 pb-3 pt-2.5 text-white`}>
               <div className="mb-2 flex items-center justify-between text-[10px] font-semibold text-white/95">
-                <span className="font-mono tabular-nums">9:41</span>
+                <span className="font-mono tabular-nums">{clockTime}</span>
                 <span className="flex h-4 w-20 items-center justify-end rounded-full bg-black/55 px-1.5" aria-hidden="true">
                   <span className="h-1.5 w-1.5 rounded-full bg-sky-400/50 ring-1 ring-white/15" />
                 </span>
@@ -569,13 +624,13 @@ export default function SimulatorView() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 border-b border-zinc-200 px-4 py-2 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:text-zinc-300">
-              <span>Phản hồi của nhân viên</span>
-              <div className="flex items-center gap-2 font-mono text-[10px]">
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3.5 py-2 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:text-zinc-300">
+              <span className="truncate">Phản hồi CSKH</span>
+              <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap font-mono text-[10px]">
                 <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300">
                   sentAtMs ✓
                 </span>
-                <span className="tabular-nums text-zinc-400">{replies.length} phản hồi</span>
+                <span className="tabular-nums text-zinc-400">{replies.length} reply</span>
                 {timeline.length > 0 && (
                   <button
                     type="button"
@@ -585,7 +640,7 @@ export default function SimulatorView() {
                     }}
                     className="font-sans font-medium text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                   >
-                    Xóa khung máy
+                    Xóa
                   </button>
                 )}
               </div>
@@ -599,15 +654,25 @@ export default function SimulatorView() {
               {timeline.length === 0 ? (
                 <p className="py-12 text-center text-xs text-zinc-400">Chưa có tin nhắn nào cho {currentConvId}</p>
               ) : (
-                timeline.map((m) =>
-                  m.direction === "CUSTOMER" ? (
+                timeline.map((m) => {
+                  const msgTime = m.createdAt
+                    ? new Date(m.createdAt).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })
+                    : "";
+                  return m.direction === "CUSTOMER" ? (
                     <motion.div
                       key={m.messageId}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="ml-auto max-w-[82%] rounded-2xl rounded-br-md bg-zinc-900 px-3 py-2 text-xs text-white shadow-xs dark:bg-zinc-200 dark:text-zinc-950"
                     >
-                      <div className="text-[10px] opacity-70">{m.senderName} (Khách · Mô phỏng)</div>
+                      <div className="flex items-center justify-between gap-2 text-[10px] opacity-70">
+                        <span className="truncate">{m.senderName} (Khách · Mô phỏng)</span>
+                        {msgTime && <span className="shrink-0 font-mono tabular-nums">{msgTime}</span>}
+                      </div>
                       <div className="mt-0.5 leading-relaxed">{m.content}</div>
                     </motion.div>
                   ) : (
@@ -617,22 +682,31 @@ export default function SimulatorView() {
                       animate={{ opacity: 1, y: 0 }}
                       className="max-w-[88%] rounded-2xl rounded-bl-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs"
                     >
-                      <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
-                        <CheckCheck className="h-3 w-3 shrink-0" />
-                        <span title={m.senderName} className="truncate">
-                          {formatAgentShort(m.senderName)}
-                        </span>
-                        <span>· {m.status}</span>
-                        {m.deliveredVia === "simulator" && (
-                          <span className="shrink-0 whitespace-nowrap rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px]">
-                            Mô phỏng
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 font-mono text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <CheckCheck className="h-3 w-3 shrink-0" />
+                          <span title={m.senderName} className="truncate">
+                            {formatAgentShort(m.senderName)}
                           </span>
-                        )}
+                          <span>· {m.status}</span>
+                        </div>
+                        {msgTime && <span className="shrink-0 tabular-nums opacity-75">{msgTime}</span>}
                       </div>
                       <div className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{m.content}</div>
+                      {m.deliveredVia === "simulator" && (
+                        <div className="mt-1 font-mono text-[9px] text-emerald-700/80 dark:text-emerald-300/80">
+                          Đã nhận từ Portal · Mô phỏng (WS)
+                        </div>
+                      )}
                     </motion.div>
-                  )
-                )
+                  );
+                })
+              )}
+              {milestoneStep === 2 && (
+                <div className="flex items-center justify-center gap-1.5 pt-1 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-500" />
+                  <span>Đã đẩy vào SQS · Chờ phản hồi từ Agent Portal…</span>
+                </div>
               )}
             </div>
 

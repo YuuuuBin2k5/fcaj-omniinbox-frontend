@@ -245,6 +245,27 @@ export default function LandingPage({
           style={{ width: `${scrollPct}%` }}
           className="h-[1.5px] bg-gradient-to-r from-sky-500 via-zinc-900 to-sky-500 transition-[width] duration-75 dark:via-white"
         />
+        <nav
+          aria-label="Điều hướng mục"
+          className="flex items-center gap-1.5 overflow-x-auto border-t border-zinc-200/70 px-4 py-1.5 text-[11px] font-medium text-zinc-600 no-scrollbar md:hidden dark:border-white/[0.06] dark:text-zinc-400"
+        >
+          {NAV_SECTIONS.map((sec) => {
+            const active = activeSection === sec.id;
+            return (
+              <a
+                key={sec.id}
+                href={`#${sec.id}`}
+                className={`shrink-0 rounded-full px-2.5 py-0.5 transition ${
+                  active
+                    ? "bg-zinc-900 font-semibold text-white dark:bg-white dark:text-zinc-950"
+                    : "hover:text-zinc-950 dark:hover:text-white"
+                }`}
+              >
+                {sec.label}
+              </a>
+            );
+          })}
+        </nav>
       </header>
 
       {/* Architectural Framed Container */}
@@ -281,7 +302,7 @@ export default function LandingPage({
             <strong className="font-semibold text-zinc-900 dark:text-zinc-100">Telegram</strong> là kênh thật hai chiều;{" "}
             <strong className="font-semibold text-zinc-900 dark:text-zinc-100">Shopee, Zalo, WebChat</strong> chạy qua
             Simulator{" "}
-            <span className="rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+            <span className="inline-block whitespace-nowrap rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
               Mô phỏng
             </span>
             .
@@ -489,7 +510,7 @@ export default function LandingPage({
                 ))}
               </div>
 
-              <svg viewBox="0 0 600 26" className="my-2.5 h-6 w-full" aria-hidden="true">
+              <svg viewBox="0 0 600 26" className="my-2.5 hidden h-6 w-full lg:block" aria-hidden="true">
                 <line x1="20" y1="13" x2="580" y2="13" stroke="rgba(161,161,170,0.22)" strokeWidth="2" />
                 <line
                   x1="20"
@@ -580,7 +601,7 @@ export default function LandingPage({
                     Lần 1: 101 OK
                   </div>
                   <div className="flex items-center justify-center rounded border border-rose-500/30 bg-rose-500/10 px-2 py-1 text-center text-rose-700 dark:text-rose-300">
-                    Lần 2: 403 Chặn
+                    Lần 2: 401 Chặn
                   </div>
                 </div>
               </div>

@@ -288,9 +288,31 @@
   transition-property: none !important;
 }
 
+/* Shimmer tinh tế cho trạng thái đang tải Skeleton */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(161, 161, 170, 0.14) 25%, rgba(161, 161, 170, 0.28) 50%, rgba(161, 161, 170, 0.14) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pipeline-dash,
-  .signal-beam {
+  .signal-beam,
+  .skeleton-shimmer {
     animation: none;
   }
   html {

@@ -1,7 +1,7 @@
 // FILE: src/features/auth/LoginForm.jsx
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Loader2, Lock, ShieldCheck, X } from "lucide-react";
 import { login, USE_MOCK } from "../../services/auth.js";
 import { evaluatePasswordRules } from "../../services/uiFormat.js";
 import BrandLogo from "../../components/BrandLogo.jsx";
@@ -17,6 +17,12 @@ const PERSONA_RING = [
   "bg-violet-500/15 text-violet-700 ring-violet-500/35 dark:text-violet-300",
 ];
 
+const PERSONA_ROLES = [
+  "Agent #1 · Nhận & xử lý chính",
+  "Agent #2 · Mở tab 2 test xung đột 409",
+  "Agent #3 · Dự phòng bàn giao ca",
+];
+
 function personaInitials(value) {
   const raw = String(value || "A").split("@")[0];
   const parts = raw.split(/[._\s-]+/).filter(Boolean);
@@ -28,12 +34,15 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
   const [username, setUsername] = useState(USE_MOCK ? MOCK_AGENTS[0] || "agent.minh@omniinbox.local" : "");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(!USE_MOCK);
   const [pending, setPending] = useState(null);
   const [newPwd, setNewPwd] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const pwdRules = evaluatePasswordRules(newPwd);
+  const pwdPassedCount = Object.values(pwdRules).filter(Boolean).length;
 
   useEffect(() => {
     function onKey(e) {
@@ -114,7 +123,7 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
           </button>
         )}
         <BrandLogo size={30} />
-        <h1 className="mt-3.5 text-lg font-bold tracking-tight text-zinc-950 dark:text-white">
+        <h1 id="login-dialog-title" className="mt-3.5 text-lg font-bold tracking-tight text-zinc-950 dark:text-white">
           OmniInbox – Đăng nhập nhân viên
         </h1>
         <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
@@ -174,7 +183,7 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
                               {a}
                             </div>
                             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                              Agent CSKH #{idx + 1} · Local Mock
+                              {PERSONA_ROLES[idx] || `Agent CSKH #${idx + 1} · Local Mock`}
                             </div>
                           </div>
                         </div>
@@ -204,48 +213,71 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
               </div>
             )}
 
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                Tên đăng nhập (Email)
-              </label>
-              <input
-                className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:bg-white focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white dark:focus:border-white/40"
-                placeholder="agent.minh@omniinbox.local"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                required
-              />
-            </div>
-
             {USE_MOCK ? (
-              <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-200">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                <span>Local Mock Mode · Không cần mật khẩu Cognito</span>
-              </div>
-            ) : (
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Mật khẩu</label>
-                <div className="relative">
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomInput((v) => !v)}
+                  className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                >
+                  <span>Hoặc nhập tên đăng nhập tùy chỉnh</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${showCustomInput ? "rotate-180" : ""}`} />
+                </button>
+                {showCustomInput && (
                   <input
-                    className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 pr-9 text-sm text-zinc-900 focus:border-zinc-900 focus:bg-white focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white dark:focus:border-white/40"
-                    type={showPwd ? "text" : "password"}
-                    placeholder="Nhập mật khẩu Cognito"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
+                    autoFocus
+                    className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:bg-white focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white dark:focus:border-white/40"
+                    placeholder="agent.minh@omniinbox.local"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                     required
                   />
-                  <button
-                    type="button"
-                    aria-label="Hiện/ẩn mật khẩu"
-                    onClick={() => setShowPwd((v) => !v)}
-                    className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                  >
-                    {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                )}
+                <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-200">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                  <span>Local Mock Mode · Không cần mật khẩu Cognito</span>
                 </div>
               </div>
+            ) : (
+              <>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    Tên đăng nhập (Email)
+                  </label>
+                  <input
+                    autoFocus
+                    className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:bg-white focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white dark:focus:border-white/40"
+                    placeholder="agent.minh@omniinbox.local"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Mật khẩu</label>
+                  <div className="relative">
+                    <input
+                      className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 pr-9 text-sm text-zinc-900 focus:border-zinc-900 focus:bg-white focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white dark:focus:border-white/40"
+                      type={showPwd ? "text" : "password"}
+                      placeholder="Nhập mật khẩu Cognito"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      aria-label="Hiện/ẩn mật khẩu"
+                      onClick={() => setShowPwd((v) => !v)}
+                      className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    >
+                      {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </>
         ) : (
@@ -264,14 +296,39 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
                 <Lock className="h-3.5 w-3.5" />
                 Đặt mật khẩu mới (lần đầu đăng nhập Cognito)
               </label>
-              <input
-                className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white"
-                type="password"
-                placeholder="Nhập mật khẩu mới"
-                value={newPwd}
-                onChange={(e) => setNewPwd(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  autoFocus
+                  className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 pr-9 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none dark:border-white/15 dark:bg-[#09090B] dark:text-white"
+                  type={showNewPwd ? "text" : "password"}
+                  placeholder="Nhập mật khẩu mới"
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  aria-label="Hiện/ẩn mật khẩu mới"
+                  onClick={() => setShowNewPwd((v) => !v)}
+                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                >
+                  {showNewPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="mt-2 grid grid-cols-4 gap-1" aria-hidden="true">
+                {[0, 1, 2, 3].map((idx) => (
+                  <span
+                    key={idx}
+                    className={`h-1 rounded-full transition-colors ${
+                      idx < pwdPassedCount
+                        ? pwdPassedCount === 4
+                          ? "bg-emerald-500"
+                          : "bg-sky-500"
+                        : "bg-zinc-200 dark:bg-white/10"
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-[11px] dark:border-white/10 dark:bg-[#09090B]">
@@ -330,6 +387,9 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
   if (asModal) {
     return (
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-dialog-title"
         className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-4 glass-panel"
         onClick={onClose}
       >

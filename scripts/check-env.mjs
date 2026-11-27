@@ -2,6 +2,7 @@
 // Dừng build nếu cấu hình production sai (đang để mock hoặc thiếu URL/Cognito).
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export function parseEnvFile(file) {
   const out = {};
@@ -59,7 +60,8 @@ export function loadMergedEnv(root = process.cwd(), processEnv = process.env) {
   return merged;
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+const isMain = process.argv[1] && fs.existsSync(process.argv[1])
+  && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
 
 if (isMain) {
   const env = loadMergedEnv();

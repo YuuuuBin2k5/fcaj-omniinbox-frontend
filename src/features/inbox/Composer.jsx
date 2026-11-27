@@ -1,9 +1,10 @@
 // FILE: src/features/inbox/Composer.jsx
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertCircle, Loader2, Send, Sparkles, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, RotateCcw, Send, Sparkles, Zap } from "lucide-react";
 import { AI_ENABLED, suggestReplies } from "../../services/apiClient.js";
 import { getAgentName } from "../../services/auth.js";
+import { filterLocalMacros } from "../../services/uiFormat.js";
 import { ChannelIcon } from "../../components/ChannelBadge.jsx";
 
 const DEST_LABEL = {
@@ -30,6 +31,14 @@ const QUICK_LOCAL_MACROS = [
     text: "Mẫu này bên shop hiện còn đủ size. Bạn muốn đặt màu nào và giao về khu vực nào ạ?",
   },
   {
+    cmd: "/ship",
+    text: "Đơn nội thành nhận trong 1-2 ngày, ngoại thành 2-4 ngày và được kiểm tra hàng trước khi thanh toán ạ.",
+  },
+  {
+    cmd: "/gia",
+    text: "Sản phẩm đang có ưu đãi freeship cho đơn từ 299k. Mình lên đơn giữ size cho bạn nhé?",
+  },
+  {
     cmd: "/camon",
     text: "Cảm ơn bạn đã ủng hộ shop. Nếu cần hỗ trợ thêm bạn cứ nhắn tại đây nhé!",
   },
@@ -42,6 +51,7 @@ export default function Composer({
   sending,
   unconfirmedNotice,
   onClearUnconfirmed,
+  onReopen,
   onSend,
   textareaRef,
 }) {
@@ -125,9 +135,30 @@ export default function Composer({
     ai && ai.source === "bedrock" ? "AI (Amazon Bedrock)" : ai ? "Gợi ý mẫu (AI chưa khả dụng)" : "";
   const focusTint = FOCUS_TINT[conv.channel] || "focus-within:border-zinc-500 focus-within:ring-zinc-400/20";
   const draftLen = (draft || "").length;
+  const filteredMacros = filterLocalMacros(QUICK_LOCAL_MACROS, draft);
+  const safeMacroIdx = filteredMacros.length ? Math.min(macroIdx, filteredMacros.length - 1) : 0;
 
   return (
     <div className="bg-[#F6F7F9] px-3 pb-3 pt-1.5 sm:px-4 dark:bg-[#09090B]">
+      {conv.status === "RESOLVED" && (
+        <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-800 dark:text-emerald-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            <span>Hội thoại đã hoàn tất · Bạn vẫn có thể trả lời thêm hoặc bấm Mở lại (E).</span>
+          </div>
+          {onReopen && (
+            <button
+              type="button"
+              onClick={onReopen}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-emerald-500/35 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-white dark:bg-black/30 dark:text-emerald-300"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Mở lại
+            </button>
+          )}
+        </div>
+      )}
+
       {otherAssignee && (
         <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -150,10 +181,11 @@ export default function Composer({
       <AnimatePresence>
         {showMacros && (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            className="elevated-sheet mb-2 space-y-1.5 rounded-xl border border-zinc-200/90 bg-white p-2.5 dark:border-white/12 dark:bg-[#141418]"
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.14 }}
+            className="elevated-sheet mb-2 space-y-1.5 rounded-xl border border-zinc-200/90 bg-white p-2.5 shadow-xl dark:border-white/20 dark:bg-[#16161B]"
           >
             <div className="flex items-center justify-between font-mono text-[10px] text-zinc-400">
               <span>Mẫu trả lời nhanh (Local — không phải AI) · ↑↓ Chọn · ↵ Chèn</span>
@@ -165,24 +197,30 @@ export default function Composer({
                 Đóng (ESC)
               </button>
             </div>
-            {QUICK_LOCAL_MACROS.map((m, i) => (
-              <button
-                key={m.cmd}
-                type="button"
-                onMouseEnter={() => setMacroIdx(i)}
-                onClick={() => applyMacro(m)}
-                className={`flex w-full items-start gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
-                  i === macroIdx
-                    ? "border-zinc-900 bg-zinc-100 text-zinc-950 dark:border-white/35 dark:bg-white/[0.08] dark:text-white"
-                    : "border-zinc-200/80 bg-zinc-50/70 text-zinc-800 dark:border-white/[0.08] dark:bg-[#09090B] dark:text-zinc-200"
-                }`}
-              >
-                <span className="shrink-0 rounded bg-zinc-200/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
-                  {m.cmd}
-                </span>
-                <span className="leading-snug">{m.text}</span>
-              </button>
-            ))}
+            {filteredMacros.length === 0 ? (
+              <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/70 px-2.5 py-2 text-center text-xs text-zinc-400 dark:border-white/[0.08] dark:bg-[#09090B]">
+                Không có mẫu nào khớp với <code className="font-mono">{draft}</code>
+              </div>
+            ) : (
+              filteredMacros.map((m, i) => (
+                <button
+                  key={m.cmd}
+                  type="button"
+                  onMouseEnter={() => setMacroIdx(i)}
+                  onClick={() => applyMacro(m)}
+                  className={`flex w-full items-start gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
+                    i === safeMacroIdx
+                      ? "border-zinc-900 bg-zinc-100 text-zinc-950 dark:border-white/35 dark:bg-white/[0.08] dark:text-white"
+                      : "border-zinc-200/80 bg-zinc-50/70 text-zinc-800 dark:border-white/[0.08] dark:bg-[#09090B] dark:text-zinc-200"
+                  }`}
+                >
+                  <span className="shrink-0 rounded bg-zinc-200/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
+                    {m.cmd}
+                  </span>
+                  <span className="leading-snug">{m.text}</span>
+                </button>
+              ))
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -230,15 +268,15 @@ export default function Composer({
           placeholder={`Nhập phản hồi gửi tới ${conv.customerName} (gõ / để mở mẫu nhanh)…`}
           onChange={(e) => handleDraftInput(e.target.value)}
           onKeyDown={(e) => {
-            if (showMacros) {
+            if (showMacros && filteredMacros.length > 0) {
               if (e.key === "ArrowDown") {
                 e.preventDefault();
-                setMacroIdx((i) => (i + 1) % QUICK_LOCAL_MACROS.length);
+                setMacroIdx((i) => (i + 1) % filteredMacros.length);
                 return;
               }
               if (e.key === "ArrowUp") {
                 e.preventDefault();
-                setMacroIdx((i) => (i - 1 + QUICK_LOCAL_MACROS.length) % QUICK_LOCAL_MACROS.length);
+                setMacroIdx((i) => (i - 1 + filteredMacros.length) % filteredMacros.length);
                 return;
               }
               if (e.key === "Escape") {
@@ -248,9 +286,13 @@ export default function Composer({
               }
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                applyMacro(QUICK_LOCAL_MACROS[macroIdx]);
+                applyMacro(filteredMacros[safeMacroIdx]);
                 return;
               }
+            } else if (showMacros && e.key === "Escape") {
+              e.preventDefault();
+              setShowMacros(false);
+              return;
             }
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();

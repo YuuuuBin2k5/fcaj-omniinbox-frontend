@@ -64,8 +64,8 @@ export const listMessages = (conversationId, params) =>
   request("GET", `${convPath(conversationId)}/messages${qs(params)}`);
 export const patchConversation = (conversationId, patch) =>
   request("PATCH", convPath(conversationId), patch);
-export const sendReply = ({ conversationId, content, retryOfMessageId }) =>
-  request("POST", "/messages/reply", { conversationId, content, retryOfMessageId });
+export const sendReply = ({ conversationId, content, retryOfMessageId, requestId }) =>
+  request("POST", "/messages/reply", { conversationId, content, retryOfMessageId, requestId });
 export const requestWsTicket = () => request("POST", "/ws-ticket");
 export const suggestReplies = (conversationId) => request("POST", "/ai/suggest", { conversationId });
 
@@ -89,7 +89,6 @@ export function connectRealtime({ onEvent, onStatus = () => {}, onResync = () =>
   let ws = null;
   let closed = false;
   let attempt = 0;
-  let everOpened = false;
   let pingTimer = null;
   let retryTimer = null;
   const seen = new Set();
@@ -122,8 +121,7 @@ export function connectRealtime({ onEvent, onStatus = () => {}, onResync = () =>
     ws.onopen = () => {
       attempt = 0;
       onStatus("connected");
-      if (everOpened) onResync();
-      everOpened = true;
+      onResync();
       pingTimer = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action: "ping" }));
       }, PING_MS);

@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { copyFileSync, mkdtempSync, rmSync, rmdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { LatencyTracker } from "../src/services/latencyTracker.js";
 import { validateProductionEnv } from "../scripts/check-env.mjs";
 
@@ -67,4 +70,22 @@ test("check-env.mjs chặn cấu hình Mock/placeholder và cho qua cấu hình 
     },
   });
   assert.equal(passRun.status, 0);
+});
+
+test("production guard rejects mock mode when its path contains spaces", () => {
+  const directory = mkdtempSync(join(tmpdir(), "Omni Inbox "));
+  const script = join(directory, "check-env.mjs");
+  try {
+    copyFileSync(new URL("../scripts/check-env.mjs", import.meta.url), script);
+    const result = spawnSync(process.execPath, [script], {
+      cwd: directory,
+      env: { ...process.env, VITE_USE_MOCK: "true" },
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /VITE_USE_MOCK/);
+  } finally {
+    rmSync(script, { force: true });
+    rmdirSync(directory);
+  }
 });

@@ -5,10 +5,13 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
+  CheckCircle2,
+  Code2,
   Copy,
   FlaskConical,
   Inbox,
   Info,
+  RotateCcw,
   ShieldAlert,
   Sparkles,
   UserCheck,
@@ -20,6 +23,7 @@ import { latencyTracker } from "../../services/latencyTracker.js";
 import { resetMock, seedManyForPagination, seedSameNamePair } from "../../services/mockBackend.js";
 import { ChannelBadge, ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
+import JsonCodeBlock from "../../components/JsonCodeBlock.jsx";
 import ConversationList from "./ConversationList.jsx";
 import ChatThread from "./ChatThread.jsx";
 import AssignSelect from "./AssignSelect.jsx";
@@ -66,6 +70,7 @@ export default function InboxView({
   const [draftsByConv, setDraftsByConv] = useState({});
   const [showQaTools, setShowQaTools] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
+  const [inspectorTab, setInspectorTab] = useState("overview");
   const [refreshing, setRefreshing] = useState(false);
   const [failNextArmed, setFailNextArmed] = useState(
     () => typeof localStorage !== "undefined" && localStorage.getItem("omni_mock_fail_next") === "1"
@@ -202,10 +207,29 @@ export default function InboxView({
 
   const isConflictNotice = inbox.notice && inbox.notice.includes("409");
 
+  const sanitizedConvJson = conv
+    ? JSON.stringify(
+        {
+          conversationId: conv.conversationId,
+          channel: conv.channel,
+          customerId: conv.customerId,
+          customerName: conv.customerName,
+          status: conv.status,
+          assignedAgent: conv.assignedAgent,
+          unreadCount: conv.unreadCount ?? 0,
+          lastMessage: conv.lastMessage,
+          lastMessageAt: conv.lastMessageAt,
+          deliveredVia: SIMULATED_CHANNELS.has(conv.channel) ? "simulator" : "telegram",
+        },
+        null,
+        2
+      )
+    : "";
+
   const renderInspectorContent = () =>
     conv && (
       <div className="space-y-3 p-3.5 text-xs">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
             Contract Inspector
           </span>
@@ -219,69 +243,102 @@ export default function InboxView({
           </button>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-white/10 dark:bg-[#09090B]">
-          <div className="text-[10px] text-zinc-400">conversationId (PK)</div>
-          <div className="mt-1 flex items-center justify-between gap-1.5 font-mono text-[11px] font-semibold text-zinc-900 dark:text-zinc-100">
-            <span className="truncate">{conv.conversationId}</span>
-            <button
-              type="button"
-              aria-label="Sao chép conversationId"
-              onClick={() => copyConversationId(conv.conversationId)}
-              className="shrink-0 rounded p-0.5 hover:bg-zinc-200 dark:hover:bg-white/10"
-            >
-              {copiedConvId ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-            </button>
-          </div>
+        {/* 2-Tab Switcher: Tổng quan | Raw JSON */}
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-0.5 text-[11px] dark:bg-[#09090B]">
+          <button
+            type="button"
+            onClick={() => setInspectorTab("overview")}
+            className={`rounded-md py-1 font-medium transition ${
+              inspectorTab === "overview"
+                ? "bg-white text-zinc-950 shadow-xs dark:bg-[#1C1C22] dark:text-white"
+                : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400"
+            }`}
+          >
+            Tổng quan
+          </button>
+          <button
+            type="button"
+            onClick={() => setInspectorTab("json")}
+            className={`inline-flex items-center justify-center gap-1 rounded-md py-1 font-medium transition ${
+              inspectorTab === "json"
+                ? "bg-white text-zinc-950 shadow-xs dark:bg-[#1C1C22] dark:text-white"
+                : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400"
+            }`}
+          >
+            <Code2 className="h-3 w-3" />
+            <span>Raw JSON</span>
+          </button>
         </div>
 
-        <dl className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-white/10 dark:bg-[#09090B]">
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">Kênh</dt>
-            <dd>
-              <ChannelBadge channel={conv.channel} />
-            </dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">customerId</dt>
-            <dd className="truncate font-mono text-[11px]">{conv.customerId}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">status</dt>
-            <dd className="font-mono text-[11px]">{conv.status}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">assignedAgent</dt>
-            <dd title={conv.assignedAgent} className="min-w-0 truncate text-right font-mono text-[11px]">
-              {conv.assignedAgent}
-            </dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">unreadCount</dt>
-            <dd className="font-mono text-[11px] tabular-nums">{conv.unreadCount ?? 0}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">Tin đã tải</dt>
-            <dd className="font-mono text-[11px] tabular-nums">{msgs.length}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="shrink-0 text-zinc-500">Realtime</dt>
-            <dd className="font-mono text-[11px]">{inbox.realtime}</dd>
-          </div>
-        </dl>
+        {inspectorTab === "json" ? (
+          <JsonCodeBlock title="OmniConversations · Record" code={sanitizedConvJson} />
+        ) : (
+          <>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-white/10 dark:bg-[#09090B]">
+              <div className="text-[10px] text-zinc-400">conversationId (PK)</div>
+              <div className="mt-1 flex items-center justify-between gap-1.5 font-mono text-[11px] font-semibold text-zinc-900 dark:text-zinc-100">
+                <span className="truncate">{conv.conversationId}</span>
+                <button
+                  type="button"
+                  aria-label="Sao chép conversationId"
+                  onClick={() => copyConversationId(conv.conversationId)}
+                  className="shrink-0 rounded p-0.5 hover:bg-zinc-200 dark:hover:bg-white/10"
+                >
+                  {copiedConvId ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                </button>
+              </div>
+            </div>
 
-        {/* DynamoDB Key & Delivery Scope (100% honest technical metadata) */}
-        <div className="space-y-1.5 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 font-mono text-[10px] text-zinc-500 dark:border-white/10 dark:bg-[#09090B] dark:text-zinc-400">
-          <div className="flex items-center justify-between gap-2">
-            <span>GSI</span>
-            <span className="text-zinc-800 dark:text-zinc-200">gsi-all-by-time</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span>deliveredVia</span>
-            <span className="text-zinc-800 dark:text-zinc-200">
-              {SIMULATED_CHANNELS.has(conv.channel) ? "simulator (Mô phỏng)" : "telegram (Thật)"}
-            </span>
-          </div>
-        </div>
+            <dl className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-white/10 dark:bg-[#09090B]">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">Kênh</dt>
+                <dd>
+                  <ChannelBadge channel={conv.channel} />
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">customerId</dt>
+                <dd className="truncate font-mono text-[11px]">{conv.customerId}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">status</dt>
+                <dd className="font-mono text-[11px]">{conv.status}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">assignedAgent</dt>
+                <dd title={conv.assignedAgent} className="min-w-0 truncate text-right font-mono text-[11px]">
+                  {conv.assignedAgent}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">unreadCount</dt>
+                <dd className="font-mono text-[11px] tabular-nums">{conv.unreadCount ?? 0}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">Tin đã tải</dt>
+                <dd className="font-mono text-[11px] tabular-nums">{msgs.length}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="shrink-0 text-zinc-500">Realtime</dt>
+                <dd className="font-mono text-[11px]">{inbox.realtime}</dd>
+              </div>
+            </dl>
+
+            {/* DynamoDB Key & Delivery Scope (100% honest technical metadata) */}
+            <div className="space-y-1.5 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 font-mono text-[10px] text-zinc-500 dark:border-white/10 dark:bg-[#09090B] dark:text-zinc-400">
+              <div className="flex items-center justify-between gap-2">
+                <span>GSI</span>
+                <span className="text-zinc-800 dark:text-zinc-200">gsi-all-by-time</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span>deliveredVia</span>
+                <span className="text-zinc-800 dark:text-zinc-200">
+                  {SIMULATED_CHANNELS.has(conv.channel) ? "simulator (Mô phỏng)" : "telegram (Thật)"}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
         {SIMULATED_CHANNELS.has(conv.channel) && (
           <button
@@ -335,7 +392,7 @@ export default function InboxView({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
-                    className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1 font-medium text-zinc-800 hover:bg-zinc-50 dark:border-white/15 dark:bg-white/5 dark:text-zinc-200"
+                    className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1 font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-white/15 dark:bg-[#1C1C22] dark:text-zinc-100 dark:hover:bg-zinc-800"
                     onClick={() => {
                       seedSameNamePair();
                       inbox.refresh();
@@ -345,7 +402,7 @@ export default function InboxView({
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1 font-medium text-zinc-800 hover:bg-zinc-50 dark:border-white/15 dark:bg-white/5 dark:text-zinc-200"
+                    className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1 font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-white/15 dark:bg-[#1C1C22] dark:text-zinc-100 dark:hover:bg-zinc-800"
                     onClick={() => {
                       seedManyForPagination(60);
                       inbox.refresh();
@@ -387,7 +444,7 @@ export default function InboxView({
         <aside
           className={`${
             conv ? "hidden md:block" : "block w-full"
-          } shrink-0 border-r border-zinc-200/90 md:w-80 lg:w-[392px] dark:border-white/[0.08]`}
+          } shrink-0 border-r border-zinc-200/90 md:w-[344px] lg:w-[392px] dark:border-white/[0.08]`}
         >
           <ConversationList
             allConversations={inbox.conversations}
@@ -399,6 +456,7 @@ export default function InboxView({
             currentAgent={currentAgent}
             realtime={inbox.realtime}
             nextToken={inbox.nextToken}
+            loading={inbox.loadingConversations}
             showQaTools={showQaTools}
             refreshing={refreshing}
             draftsByConv={draftsByConv}
@@ -524,12 +582,12 @@ export default function InboxView({
             </div>
           ) : (
             <>
-              {/* Clean Single-Row Thread Header */}
-              <header className="relative z-20 flex flex-wrap items-center gap-2 border-b border-zinc-200/90 bg-white px-3 py-2.5 lg:flex-nowrap dark:border-white/[0.08] dark:bg-[#111114]">
+              {/* Responsive Single/Multi-Row Thread Header (never collides or clips on mobile/tablet) */}
+              <header className="relative z-20 flex flex-wrap items-center gap-2 border-b border-zinc-200/90 bg-white px-3 py-2.5 xl:flex-nowrap dark:border-white/[0.08] dark:bg-[#111114]">
                 <button
                   type="button"
                   onClick={() => inbox.select(null)}
-                  className="shrink-0 rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 md:hidden dark:border-white/15 dark:text-zinc-200"
+                  className="shrink-0 whitespace-nowrap rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 md:hidden dark:border-white/15 dark:text-zinc-200"
                 >
                   ← Danh sách
                 </button>
@@ -568,7 +626,7 @@ export default function InboxView({
                   </div>
                 </div>
 
-                <div className="ml-auto flex shrink-0 flex-wrap items-center gap-1.5 sm:flex-nowrap">
+                <div className="flex w-full flex-wrap items-center justify-end gap-1.5 xl:ml-auto xl:w-auto xl:shrink-0 xl:flex-nowrap">
                   {conv.assignedAgent === "unassigned" && currentAgent && (
                     <button
                       type="button"
@@ -651,6 +709,8 @@ export default function InboxView({
                     conv={conv}
                     convId={conv.conversationId}
                     messages={msgs}
+                    loading={Boolean(inbox.loadingMessagesByConv[conv.conversationId])}
+                    pendingOutgoing={inbox.pendingOutgoingByConv[conv.conversationId]}
                     hasOlder={inbox.hasOlder}
                     retryingMessageId={inbox.retryingMessageId}
                     onLoadOlder={inbox.loadOlder}
@@ -666,6 +726,7 @@ export default function InboxView({
                     sending={Boolean(inbox.sendingByConv[conv.conversationId])}
                     unconfirmedNotice={inbox.unconfirmedByConv[conv.conversationId]}
                     onClearUnconfirmed={() => inbox.clearUnconfirmed(conv.conversationId)}
+                    onReopen={() => inbox.setStatus(conv, "OPEN")}
                     onSend={handleSend}
                   />
                 </div>
@@ -712,6 +773,43 @@ export default function InboxView({
           )}
         </main>
       </div>
+      {/* Ephemeral Action Confirmation Toast + Undo (top-center floating pill, never occludes Send or Header) */}
+      <AnimatePresence>
+        {inbox.toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 460, damping: 34 }}
+            className="surface-specular glass-panel fixed top-[62px] right-4 z-50 flex max-w-[92vw] items-center gap-2.5 rounded-xl border border-zinc-200 bg-white/95 px-3.5 py-2 text-xs text-zinc-900 shadow-2xl dark:border-white/20 dark:bg-[#16161B]/95 dark:text-zinc-100"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            <span className="font-medium">{inbox.toast.text}</span>
+            {inbox.toast.undoLabel && inbox.toast.onUndo && (
+              <button
+                type="button"
+                onClick={() => {
+                  const fn = inbox.toast.onUndo;
+                  inbox.dismissToast();
+                  fn();
+                }}
+                className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-100 dark:border-white/15 dark:bg-white/10 dark:text-white"
+              >
+                <RotateCcw className="h-2.5 w-2.5" />
+                {inbox.toast.undoLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label="Đóng thông báo nhanh"
+              onClick={inbox.dismissToast}
+              className="rounded p-0.5 text-zinc-400 hover:text-zinc-800 dark:hover:text-white"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

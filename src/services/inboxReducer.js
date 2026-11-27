@@ -44,7 +44,8 @@ export function mergeMessage(list, msg) {
   const idx = list.findIndex((m) => m.messageId === msg.messageId);
   if (idx >= 0) {
     const prev = list[idx];
-    if (prev.status === "SENT" && msg.status === "FAILED") {
+    if ((prev.status === "SENT" && msg.status !== "SENT") ||
+        (prev.status === "UNKNOWN" && msg.status === "SENDING")) {
       return list;
     }
     const next = [...list];

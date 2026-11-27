@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { evaluatePasswordRules, formatAgentShort, splitHighlight, tokenizeJson } from "../src/services/uiFormat.js";
+import {
+  evaluatePasswordRules,
+  filterLocalMacros,
+  formatAgentShort,
+  formatRelativeTime,
+  splitHighlight,
+  tokenizeJson,
+} from "../src/services/uiFormat.js";
 
 test("formatAgentShort rút gọn phần tên trước @ nhưng giữ nguyên unassigned và tên không có @", () => {
   assert.equal(formatAgentShort("agent.minh@omniinbox.local"), "agent.minh");
@@ -47,4 +54,31 @@ test("evaluatePasswordRules kiểm tra đủ 4 tiêu chí mật khẩu Cognito",
     hasLower: true,
     hasNumber: true,
   });
+});
+
+test("formatRelativeTime định dạng Vừa xong, phút, trong ngày, Hôm qua và DD/MM", () => {
+  const now = new Date(2026, 10, 27, 14, 30, 0).getTime();
+  assert.equal(formatRelativeTime("", now), "");
+  assert.equal(formatRelativeTime(now - 15_000, now), "Vừa xong");
+  assert.equal(formatRelativeTime(now - 12 * 60_000, now), "12p");
+  assert.match(formatRelativeTime(new Date(2026, 10, 27, 9, 5, 0).getTime(), now), /09:05/);
+  assert.equal(formatRelativeTime(new Date(2026, 10, 26, 18, 0, 0).getTime(), now), "Hôm qua");
+  assert.equal(formatRelativeTime(new Date(2026, 10, 20, 10, 0, 0).getTime(), now), "20/11");
+});
+
+test("filterLocalMacros lọc chính xác theo lệnh / và trả toàn bộ khi mới gõ /", () => {
+  const macros = [
+    { cmd: "/chao", text: "Chào bạn" },
+    { cmd: "/ship", text: "Giao hàng nhanh" },
+  ];
+  assert.equal(filterLocalMacros(macros, "/").length, 2);
+  assert.deepEqual(
+    filterLocalMacros(macros, "/sh").map((m) => m.cmd),
+    ["/ship"]
+  );
+  assert.deepEqual(
+    filterLocalMacros(macros, "/ch").map((m) => m.cmd),
+    ["/chao"]
+  );
+  assert.equal(filterLocalMacros(macros, "/khongco").length, 0);
 });

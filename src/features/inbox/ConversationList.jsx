@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { CheckCircle2, RefreshCw, Search, SlidersHorizontal, UserCheck, X } from "lucide-react";
 import { ChannelBadge, ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
-import { formatAgentShort, splitHighlight } from "../../services/uiFormat.js";
+import { formatAgentShort, formatRelativeTime, splitHighlight } from "../../services/uiFormat.js";
 
 const CHANNEL_TABS = [
   { id: "all", label: "Tất cả" },
@@ -14,10 +14,10 @@ const CHANNEL_TABS = [
 ];
 
 const STATUS_TABS = [
-  { id: "all", label: "Tất cả" },
-  { id: "OPEN", label: "OPEN" },
-  { id: "IN_PROGRESS", label: "IN_PROGRESS" },
-  { id: "RESOLVED", label: "RESOLVED" },
+  { id: "all", label: "Tất cả", title: "Tất cả trạng thái" },
+  { id: "OPEN", label: "Mở", title: "OPEN — Chưa xử lý" },
+  { id: "IN_PROGRESS", label: "Đang tư vấn", title: "IN_PROGRESS — Đang tư vấn" },
+  { id: "RESOLVED", label: "Hoàn tất", title: "RESOLVED — Đã hoàn tất" },
 ];
 
 const QUEUE_SCOPES = [
@@ -74,6 +74,7 @@ export default function ConversationList({
   currentAgent = "",
   realtime,
   nextToken,
+  loading = false,
   showQaTools,
   refreshing = false,
   draftsByConv = {},
@@ -219,8 +220,8 @@ export default function ConversationList({
           })}
         </div>
 
-        {/* Single-Row Channel Filter Bar */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
+        {/* Channel Filter Bar */}
+        <div className="flex flex-wrap items-center gap-1">
           {CHANNEL_TABS.map((t) => (
             <button
               type="button"
@@ -253,12 +254,13 @@ export default function ConversationList({
           </div>
         )}
 
-        {/* Single-Row Status Filter Bar */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        {/* Status Filter Bar */}
+        <div className="flex flex-wrap items-center gap-1">
           {STATUS_TABS.map((t) => (
             <button
               type="button"
               key={t.id}
+              title={t.title}
               onClick={() => onStatusChange(t.id)}
               className={`relative inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-medium transition ${
                 status === t.id
@@ -273,6 +275,7 @@ export default function ConversationList({
                   className="absolute inset-0 rounded-lg bg-zinc-800 dark:bg-zinc-200"
                 />
               )}
+              {t.id !== "all" && <StatusIcon status={t.id} className="relative z-10 h-2.5 w-2.5 shrink-0" />}
               <span className="relative z-10">{t.label}</span>
               <span className="relative z-10 font-mono text-[9px] tabular-nums opacity-70">{statusCounts[t.id]}</span>
             </button>
@@ -282,7 +285,26 @@ export default function ConversationList({
 
       {/* Conversation List */}
       <div className="gutter-stable flex-1 overflow-y-auto">
-        {visibleList.length === 0 ? (
+        {loading && allConversations.length === 0 ? (
+          <div aria-label="Đang tải danh sách hội thoại" className="divide-y divide-zinc-100 dark:divide-white/[0.06]">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="flex items-start gap-2.5 px-3 py-3">
+                <div className="skeleton-shimmer h-8 w-8 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="skeleton-shimmer h-3 w-32 rounded-md" />
+                    <div className="skeleton-shimmer h-2.5 w-10 rounded-md" />
+                  </div>
+                  <div className="skeleton-shimmer h-3 w-4/5 rounded-md" />
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="skeleton-shimmer h-3 w-24 rounded-md" />
+                    <div className="skeleton-shimmer h-2.5 w-16 rounded-md" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : visibleList.length === 0 ? (
           <div className="p-5 text-center text-xs text-zinc-500 dark:text-zinc-400">
             {nextToken ? (
               <div className="space-y-2.5">
@@ -374,16 +396,14 @@ export default function ConversationList({
                       </span>
 
                       <div className="relative flex shrink-0 items-center">
-                        <span className="font-mono text-[10px] tabular-nums text-zinc-400 transition group-hover:opacity-0">
-                          {c.lastMessageAt
-                            ? new Date(c.lastMessageAt).toLocaleTimeString("vi-VN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : ""}
+                        <span
+                          title={c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleString("vi-VN") : ""}
+                          className="font-mono text-[10px] tabular-nums text-zinc-400 transition group-hover:opacity-0 group-focus-within:opacity-0"
+                        >
+                          {formatRelativeTime(c.lastMessageAt)}
                         </span>
 
-                        <div className="pointer-events-none absolute right-0 flex items-center gap-1 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100">
+                        <div className="pointer-events-none absolute right-0 flex items-center gap-1 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
                           {canQuickClaim && (
                             <button
                               type="button"

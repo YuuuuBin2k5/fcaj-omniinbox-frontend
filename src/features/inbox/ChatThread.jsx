@@ -16,12 +16,23 @@ function originInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function ChatThread({ conv, convId, messages, hasOlder, retryingMessageId, onLoadOlder, onRetry }) {
+export default function ChatThread({
+  conv,
+  convId,
+  messages,
+  loading = false,
+  pendingOutgoing = null,
+  hasOlder,
+  retryingMessageId,
+  onLoadOlder,
+  onRetry,
+}) {
   const containerRef = useRef(null);
   const nearBottomRef = useRef(true);
   const prevLenRef = useRef(0);
   const prevConvRef = useRef(null);
   const [hasNewBelow, setHasNewBelow] = useState(false);
+  const [farFromBottom, setFarFromBottom] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
   const grouped = useMemo(() => groupMessages(messages), [messages]);
@@ -32,6 +43,7 @@ export default function ChatThread({ conv, convId, messages, hasOlder, retryingM
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
     const near = distance <= 80;
     nearBottomRef.current = near;
+    setFarFromBottom(distance > 280);
     if (near) setHasNewBelow(false);
   }
 
@@ -44,6 +56,7 @@ export default function ChatThread({ conv, convId, messages, hasOlder, retryingM
       el.scrollTop = el.scrollHeight;
     }
     nearBottomRef.current = true;
+    setFarFromBottom(false);
     setHasNewBelow(false);
   }
 
@@ -66,18 +79,19 @@ export default function ChatThread({ conv, convId, messages, hasOlder, retryingM
     if (switchedConv) {
       el.scrollTop = el.scrollHeight;
       nearBottomRef.current = true;
+      setFarFromBottom(false);
       setHasNewBelow(false);
-    } else if (grew) {
+    } else if (grew || pendingOutgoing) {
       if (nearBottomRef.current) {
         el.scrollTop = el.scrollHeight;
-      } else {
+      } else if (grew) {
         setHasNewBelow(true);
       }
     }
 
     prevConvRef.current = convId;
     prevLenRef.current = messages.length;
-  }, [convId, messages.length]);
+  }, [convId, messages.length, pendingOutgoing]);
 
   return (
     <div className="dot-canvas relative flex-1 overflow-hidden bg-[#F6F7F9] dark:bg-[#09090B]">
@@ -116,7 +130,24 @@ export default function ChatThread({ conv, convId, messages, hasOlder, retryingM
           )
         )}
 
-        {grouped.length === 0 ? (
+        {loading && grouped.length === 0 ? (
+          <div aria-label="Đang tải lịch sử tin nhắn" className="space-y-3 py-4">
+            <div className="flex items-end gap-2">
+              <div className="skeleton-shimmer h-7 w-7 shrink-0 rounded-full" />
+              <div className="skeleton-shimmer h-14 w-60 rounded-2xl rounded-bl-md" />
+            </div>
+            <div className="flex justify-end">
+              <div className="skeleton-shimmer h-12 w-52 rounded-2xl rounded-br-md" />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="skeleton-shimmer h-7 w-7 shrink-0 rounded-full" />
+              <div className="skeleton-shimmer h-16 w-72 rounded-2xl rounded-bl-md" />
+            </div>
+            <div className="flex justify-end">
+              <div className="skeleton-shimmer h-10 w-44 rounded-2xl rounded-br-md" />
+            </div>
+          </div>
+        ) : grouped.length === 0 ? (
           <div className="py-10 text-center text-xs text-zinc-400">
             Chưa có tin nhắn nào trong lịch sử đã tải.
           </div>
@@ -142,20 +173,36 @@ export default function ChatThread({ conv, convId, messages, hasOlder, retryingM
             )
           )
         )}
+
+        {pendingOutgoing && (
+          <div className="mt-2 flex justify-end">
+            <div className="bubble-outbound max-w-[78%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm text-white opacity-80">
+              <div className="whitespace-pre-wrap break-words leading-relaxed">{pendingOutgoing.content}</div>
+              <div className="mt-1 flex items-center justify-end gap-1.5 text-[10px] text-blue-100">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Đang gửi…</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
-        {hasNewBelow && (
+        {(hasNewBelow || farFromBottom) && (
           <motion.button
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             type="button"
             onClick={scrollToBottom}
-            className="absolute bottom-3 right-4 inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-lg glass-panel hover:bg-zinc-800 dark:bg-white dark:text-zinc-950"
+            className={`absolute bottom-3 right-4 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-lg glass-panel ${
+              hasNewBelow
+                ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950"
+                : "border border-zinc-200 bg-white/95 text-zinc-700 hover:bg-zinc-100 dark:border-white/15 dark:bg-[#18181C]/95 dark:text-zinc-200"
+            }`}
           >
             <ArrowDown className="h-3.5 w-3.5" />
-            <span>Có tin mới</span>
+            <span>{hasNewBelow ? "Có tin mới" : "Về cuối"}</span>
           </motion.button>
         )}
       </AnimatePresence>

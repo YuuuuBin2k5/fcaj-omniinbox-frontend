@@ -1,7 +1,7 @@
 // FILE: src/App.jsx
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Command, FlaskConical, Home, Inbox, Loader2, LogOut, Moon, Search, ShieldCheck, Sun } from "lucide-react";
+import { Command, FlaskConical, Home, Inbox, Keyboard, Loader2, LogOut, Moon, Search, ShieldCheck, Sun, X } from "lucide-react";
 import { getAgentName, getCurrentSession, logout, USE_MOCK } from "./services/auth.js";
 import { setUnauthorizedHandler } from "./services/apiClient.js";
 import { seedManyForPagination, seedSameNamePair } from "./services/mockBackend.js";
@@ -47,6 +47,7 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(window.location.hash === "#login");
   const [view, setView] = useState(() => parseHashView() || "inbox");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [externalConversations, setExternalConversations] = useState([]);
   const [externalSelectConv, setExternalSelectConv] = useState(null);
@@ -93,15 +94,30 @@ export default function App() {
         e.preventDefault();
         if (authed) {
           setProfileOpen(false);
+          setShortcutsOpen(false);
           setPaletteOpen((o) => !o);
         } else {
           setShowLogin(true);
         }
+        return;
+      }
+      if (e.key === "Escape" && shortcutsOpen) {
+        e.preventDefault();
+        setShortcutsOpen(false);
+        return;
+      }
+      const tag = (document.activeElement?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "?" && authed) {
+        e.preventDefault();
+        setProfileOpen(false);
+        setPaletteOpen(false);
+        setShortcutsOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", onGlobalKey);
     return () => window.removeEventListener("keydown", onGlobalKey);
-  }, [authed]);
+  }, [authed, shortcutsOpen]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -126,6 +142,23 @@ export default function App() {
     const targetHash = view === "simulator" ? "#simulator" : view === "landing" ? "#landing" : "#inbox";
     if (window.location.hash !== targetHash) window.location.hash = targetHash;
   }, [authed, view]);
+
+  const totalUnread = externalConversations.reduce((acc, c) => acc + (Number(c.unreadCount) || 0), 0);
+
+  useEffect(() => {
+    const prefix = totalUnread > 0 ? `(${totalUnread > 99 ? "99+" : totalUnread}) ` : "";
+    if (!authed) {
+      document.title = "OmniInbox · AWS Serverless Unified Inbox";
+      return;
+    }
+    if (view === "simulator") {
+      document.title = `${prefix}OmniInbox · Customer Simulator (Mô phỏng)`;
+    } else if (view === "landing") {
+      document.title = `${prefix}OmniInbox · AWS Serverless Unified Inbox`;
+    } else {
+      document.title = `${prefix}OmniInbox · Hộp thư CSKH`;
+    }
+  }, [authed, view, totalUnread]);
 
   const toggleTheme = () => {
     const root = document.documentElement;
@@ -193,7 +226,6 @@ export default function App() {
     );
   }
 
-  const totalUnread = externalConversations.reduce((acc, c) => acc + (Number(c.unreadCount) || 0), 0);
   const agentName = getAgentName() || "agent";
   const navItems = [
     { id: "inbox", label: "Hộp thư CSKH", short: "Hộp thư", icon: Inbox, badge: totalUnread },
@@ -344,8 +376,21 @@ export default function App() {
                   </div>
 
                   <div className="mt-2.5 space-y-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
-                    <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                      Phím tắt nhanh
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                        Phím tắt nhanh
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          setShortcutsOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1 font-mono text-[10px] font-medium text-sky-600 hover:underline dark:text-sky-400"
+                      >
+                        <Keyboard className="h-3 w-3" />
+                        Tất cả (?)
+                      </button>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Chuyển hội thoại</span>
@@ -391,12 +436,12 @@ export default function App() {
       </aside>
 
       {/* Mobile Compact Single Top Bar (< md) */}
-      <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-zinc-200 bg-white px-3 md:hidden dark:border-white/10 dark:bg-[#09090B]">
-        <button type="button" aria-label="Về trang giới thiệu" onClick={() => setView("landing")}>
-          <BrandLogo size={24} showText={false} />
+      <header className="flex h-12 shrink-0 items-center justify-between gap-1.5 border-b border-zinc-200 bg-white px-2.5 md:hidden dark:border-white/10 dark:bg-[#09090B]">
+        <button type="button" aria-label="Về trang giới thiệu" onClick={() => setView("landing")} className="shrink-0">
+          <BrandLogo size={22} showText={false} />
         </button>
 
-        <nav className="flex items-center gap-1 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
+        <nav className="flex min-w-0 items-center gap-0.5 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
           {navItems.map((n) => {
             const Icon = n.icon;
             const active = view === n.id;
@@ -405,14 +450,14 @@ export default function App() {
                 key={n.id}
                 type="button"
                 onClick={() => setView(n.id)}
-                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition ${
                   active
                     ? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-white"
                     : "text-zinc-600 dark:text-zinc-400"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{n.short}</span>
+                <Icon className="h-3 w-3 shrink-0" />
+                <span>{n.id === "landing" ? "Home" : n.short}</span>
               </button>
             );
           })}
@@ -457,7 +502,7 @@ export default function App() {
               onClearExternalSelect={() => setExternalSelectConv(null)}
             />
           ) : (
-            <SimulatorView />
+            <SimulatorView onOpenInbox={() => setView("inbox")} />
           )}
         </Suspense>
       </div>
@@ -473,6 +518,66 @@ export default function App() {
         onSeedSameName={seedSameNamePair}
         onSeedPagination={() => seedManyForPagination(60)}
       />
+
+      <AnimatePresence>
+        {shortcutsOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShortcutsOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-4 glass-panel"
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Bảng phím tắt OmniInbox"
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              onClick={(e) => e.stopPropagation()}
+              className="surface-specular w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-white/15 dark:bg-[#111114]"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-white/10">
+                <div className="flex items-center gap-2 text-xs font-bold text-zinc-950 dark:text-white">
+                  <Keyboard className="h-4 w-4 text-sky-500" />
+                  <span>Phím tắt thao tác nhanh</span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Đóng bảng phím tắt"
+                  onClick={() => setShortcutsOpen(false)}
+                  className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid gap-3 p-4 text-xs sm:grid-cols-2">
+                {[
+                  ["J / K", "Hội thoại kế tiếp / trước"],
+                  ["R", "Focus ô trả lời"],
+                  ["/", "Tìm kiếm hoặc mở Mẫu nhanh"],
+                  ["C", "Nhận xử lý hội thoại"],
+                  ["E", "Hoàn tất / Mở lại"],
+                  ["I", "Mở Contract Inspector"],
+                  ["Ctrl + K", "Command Palette"],
+                  ["?", "Mở / Đóng bảng phím tắt"],
+                ].map(([keyLabel, desc]) => (
+                  <div
+                    key={keyLabel}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-2 dark:border-white/10 dark:bg-[#09090B]"
+                  >
+                    <span className="text-zinc-600 dark:text-zinc-300">{desc}</span>
+                    <kbd className="kbd-cap shrink-0 rounded border border-zinc-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-900 dark:border-white/15 dark:bg-zinc-900 dark:text-white">
+                      {keyLabel}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
