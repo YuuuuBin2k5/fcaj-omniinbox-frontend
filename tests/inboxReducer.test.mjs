@@ -199,3 +199,34 @@ test("applyEvent cập nhật conversation khi tin nhắn lịch sử chưa mở
   assert.equal(next.conversations.length, 1);
   assert.equal(next.messages.C1, undefined);
 });
+
+test("mergeMessage sắp xếp theo epoch ms và thứ tự số thay vì #10 đứng trước #2", () => {
+  const m10 = { conversationId: "C1", messageId: "MSG#1732200001000#10", content: "Tin 10" };
+  const m2 = { conversationId: "C1", messageId: "MSG#1732200001000#2", content: "Tin 2" };
+  const mOut = { conversationId: "C1", messageId: "MSG#1732200002000#OUT-1", content: "NV trả lời" };
+  const sorted = mergeMessageList([m10, mOut], [m2]);
+  assert.deepEqual(
+    sorted.map((m) => m.messageId),
+    ["MSG#1732200001000#2", "MSG#1732200001000#10", "MSG#1732200002000#OUT-1"]
+  );
+});
+
+test("upsertConversation giữ nguyên lastMessageDirection mới nhất khi sự kiện cũ về trễ", () => {
+  const newer = {
+    conversationId: "C1",
+    lastMessage: "[NV] Dạ còn ạ",
+    lastMessageAt: "2026-11-27T05:00:00.000Z",
+    lastMessageDirection: "OUTBOUND",
+    status: "IN_PROGRESS",
+  };
+  const older = {
+    conversationId: "C1",
+    lastMessage: "Còn không shop?",
+    lastMessageAt: "2026-11-27T04:59:00.000Z",
+    lastMessageDirection: "INBOUND",
+    status: "RESOLVED",
+  };
+  const out = upsertConversation([newer], older);
+  assert.equal(out[0].lastMessageDirection, "OUTBOUND");
+  assert.equal(out[0].lastMessage, "[NV] Dạ còn ạ");
+});

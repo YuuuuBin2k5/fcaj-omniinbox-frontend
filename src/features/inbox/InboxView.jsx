@@ -21,7 +21,7 @@ import {
 import { useInbox } from "../../hooks/useInbox.js";
 import { getAgentName, USE_MOCK } from "../../services/auth.js";
 import { latencyTracker } from "../../services/latencyTracker.js";
-import { clampSidebarWidth, countMessageMatches } from "../../services/uiFormat.js";
+import { clampSidebarWidth, countMessageMatches, isAwaitingReply } from "../../services/uiFormat.js";
 import { resetMock, seedManyForPagination, seedSameNamePair } from "../../services/mockBackend.js";
 import { ChannelBadge, ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
@@ -60,6 +60,7 @@ function customerInitials(name) {
 }
 
 export default function InboxView({
+  active = true,
   onOpenSimulator,
   onConversationsChange,
   externalSelectConv,
@@ -70,6 +71,7 @@ export default function InboxView({
   const [status, setStatus] = useState("all");
   const [queueScope, setQueueScope] = useState("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [awaitingOnly, setAwaitingOnly] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() =>
     clampSidebarWidth(typeof localStorage !== "undefined" ? localStorage.getItem("omni_sidebar_w") : 392)
   );
@@ -99,11 +101,12 @@ export default function InboxView({
         if (channel !== "all" && c.channel !== channel) return false;
         if (status !== "all" && c.status !== status) return false;
         if (unreadOnly && !(Number(c.unreadCount) > 0)) return false;
+        if (awaitingOnly && !isAwaitingReply(c)) return false;
         if (queueScope === "mine" && c.assignedAgent !== currentAgent) return false;
         if (queueScope === "unassigned" && c.assignedAgent && c.assignedAgent !== "unassigned") return false;
         return true;
       }),
-    [inbox.conversations, channel, status, unreadOnly, queueScope, currentAgent]
+    [inbox.conversations, channel, status, unreadOnly, awaitingOnly, queueScope, currentAgent]
   );
 
   useEffect(() => {
@@ -154,6 +157,7 @@ export default function InboxView({
 
   // Phím tắt chuẩn Linear: J/K di chuyển, R focus Composer, / tìm kiếm, E hoàn tất/mở lại, C nhận xử lý, I bật Inspector
   useEffect(() => {
+    if (!active) return undefined;
     function onKey(e) {
       const tag = (document.activeElement?.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select" || e.ctrlKey || e.metaKey || e.altKey) {
@@ -191,7 +195,7 @@ export default function InboxView({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [list, conv, currentAgent, inbox.selectedId, inbox.select, inbox.setStatus, inbox.assign]);
+  }, [active, list, conv, currentAgent, inbox.selectedId, inbox.select, inbox.setStatus, inbox.assign]);
 
   const queueSummary = useMemo(() => {
     const all = inbox.conversations;
@@ -379,7 +383,21 @@ export default function InboxView({
                   {SIMULATED_CHANNELS.has(conv.channel) ? "simulator (Mô phỏng)" : "telegram (Thật)"}
                 </span>
               </div>
+              <div className="flex items-center justify-between gap-2">
+                <span>lastMessageDirection</span>
+                <span className="text-zinc-800 dark:text-zinc-200">
+                  {conv.lastMessageDirection || (String(conv.lastMessage || "").startsWith("[NV] ") ? "OUTBOUND" : "INBOUND")}
+                </span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => inbox.toggleUnread(conv)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-white/12 dark:bg-[#18181C] dark:text-zinc-200 dark:hover:bg-white/10"
+            >
+              {Number(conv.unreadCount) > 0 ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
+            </button>
           </>
         )}
 
@@ -497,6 +515,7 @@ export default function InboxView({
             status={status}
             queueScope={queueScope}
             unreadOnly={unreadOnly}
+            awaitingOnly={awaitingOnly}
             currentAgent={currentAgent}
             realtime={inbox.realtime}
             nextToken={inbox.nextToken}
@@ -507,6 +526,7 @@ export default function InboxView({
             searchInputRef={searchInputRef}
             onToggleQaTools={() => setShowQaTools((v) => !v)}
             onToggleUnreadOnly={() => setUnreadOnly((v) => !v)}
+            onToggleAwaitingOnly={() => setAwaitingOnly((v) => !v)}
             onRefresh={handleRefresh}
             onChannelChange={setChannel}
             onStatusChange={setStatus}
@@ -516,6 +536,7 @@ export default function InboxView({
               setStatus("all");
               setQueueScope("all");
               setUnreadOnly(false);
+              setAwaitingOnly(false);
             }}
             onQuickAssign={(c, ag) => inbox.assign(c, ag)}
             onQuickResolve={(c) => inbox.setStatus(c, "RESOLVED")}
@@ -844,6 +865,7 @@ export default function InboxView({
                     retryingMessageId={inbox.retryingMessageId}
                     onLoadOlder={inbox.loadOlder}
                     onRetry={(msg) => handleSend(conv, msg.content, msg.messageId)}
+                    onSyncStatus={handleRefresh}
                   />
 
                   <Composer

@@ -107,7 +107,7 @@ export default function Composer({
 
   async function submit() {
     const content = (draft || "").trim();
-    if (!content || sending) return;
+    if (!content || sending || otherAssignee) return;
     setShowMacros(false);
     const r = await onSend(conv, content);
     if (r && (r.ok || r.recordedOnServer)) {
@@ -277,7 +277,11 @@ export default function Composer({
           rows={1}
           value={draft}
           maxLength={4000}
-          placeholder={`Nhập phản hồi gửi tới ${conv.customerName} (gõ / để mở mẫu nhanh)…`}
+          placeholder={
+            otherAssignee
+              ? `Đang do ${otherAssignee} phụ trách · Bấm 'Nhận lại' phía trên để gửi phản hồi…`
+              : `Nhập phản hồi gửi tới ${conv.customerName} (gõ / để mở mẫu nhanh)…`
+          }
           onChange={(e) => handleDraftInput(e.target.value)}
           onKeyDown={(e) => {
             if (showMacros && filteredMacros.length > 0) {
@@ -364,11 +368,12 @@ export default function Composer({
               whileTap={{ scale: 0.97 }}
               type="button"
               className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-950 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-40 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-              disabled={sending || !(draft || "").trim()}
+              disabled={sending || Boolean(otherAssignee) || !(draft || "").trim()}
+              title={otherAssignee ? `Hội thoại đang thuộc ${otherAssignee} — bấm Nhận lại để trả lời` : undefined}
               onClick={submit}
             >
               {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              <span>{sending ? "Đang gửi…" : "Gửi (Enter)"}</span>
+              <span>{sending ? "Đang gửi…" : otherAssignee ? "Nhận lại để gửi" : "Gửi (Enter)"}</span>
             </motion.button>
           </div>
         </div>

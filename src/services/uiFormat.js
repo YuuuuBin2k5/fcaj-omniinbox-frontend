@@ -132,3 +132,26 @@ export function countMessageMatches(messages = [], query = "") {
     0
   );
 }
+
+/**
+ * Xác định hội thoại có đang chờ shop trả lời hay không (khách nhắn gần nhất và chưa RESOLVED).
+ */
+export function isAwaitingReply(conv) {
+  if (!conv || conv.status === "RESOLVED") return false;
+  if (conv.lastMessageDirection) return conv.lastMessageDirection === "INBOUND";
+  return !String(conv.lastMessage || "").startsWith("[NV] ");
+}
+
+/**
+ * Nhãn SLA thời gian chờ cho hội thoại khách đang đợi phản hồi (chỉ hiện từ >= 5 phút).
+ */
+export function formatWaitBadge(conv, nowMs = Date.now()) {
+  if (!isAwaitingReply(conv)) return null;
+  const ref = conv.lastMessageAt || conv.lastInboundAt;
+  const ms = typeof ref === "number" ? ref : Date.parse(ref);
+  if (!Number.isFinite(ms)) return null;
+  const waitMin = Math.floor((nowMs - ms) / 60_000);
+  if (waitMin < 5) return null;
+  const label = waitMin < 60 ? `Chờ ${waitMin}p` : `Chờ ${Math.floor(waitMin / 60)}h`;
+  return { label, urgent: waitMin >= 15 };
+}

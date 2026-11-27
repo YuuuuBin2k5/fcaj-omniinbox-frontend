@@ -146,3 +146,57 @@ test("ws-ticket và ai/suggest hoạt động đúng hợp đồng", async () =>
   assert.equal(ai.source, "fallback");
   assert.equal(ai.suggestions.length, 3);
 });
+
+test("mockBackend đồng bộ với backend mới: Telegram media, reply 409 ownership, FAILED giữ OPEN, requestId & expectedLastMessageAt", async () => {
+  resetMock();
+  globalThis.localStorage.setItem("omni_mock_agent", "agent.minh@omniinbox.local");
+
+  // 1. Telegram photo + caption không bị nuốt tin
+  await handle("POST", "/webhook/telegram", {
+    message: {
+      message_id: 777,
+      date: 1732264300,
+      chat: { id: 678901234 },
+      from: { first_name: "Minh" },
+      photo: [{ file_id: "p1" }],
+      caption: "Bill chuyển khoản ạ",
+    },
+  });
+  const cid = "CONV#telegram#678901234";
+  const conv0 = (await handle("GET", "/conversations")).conversations.find((c) => c.conversationId === cid);
+  assert.equal(conv0.lastMessageDirection, "INBOUND");
+  assert.equal(conv0.lastMessage, "[Hình ảnh] Bill chuyển khoản ạ");
+
+  // 2. PATCH expectedLastMessageAt sai -> 409 STALE_CONVERSATION
+  await assert.rejects(
+    () =>
+      handle("PATCH", convPath(cid), {
+        unreadCount: 0,
+        expectedLastMessageAt: "2020-01-01T00:00:00.000Z",
+      }),
+    (err) => err.status === 409
+  );
+
+  // 3. Reply FAILED giữ nguyên status OPEN và unreadCount = 1
+  globalThis.localStorage.setItem("omni_mock_fail_next", "1");
+  const failReply = await handle("POST", "/messages/reply", { conversationId: cid, content: "Test lỗi" });
+  assert.equal(failReply.ok, false);
+  assert.equal(failReply.conversation.status, "OPEN");
+  assert.equal(failReply.conversation.unreadCount, 1);
+
+  // 4. Reply bằng requestId lặp lại không tạo tin trùng và trả conversation
+  const reqId = "1732264305000-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+  const r1 = await handle("POST", "/messages/reply", { conversationId: cid, content: "Xin chào", requestId: reqId });
+  const r2 = await handle("POST", "/messages/reply", { conversationId: cid, content: "Xin chào", requestId: reqId });
+  assert.equal(r1.message.messageId, r2.message.messageId);
+  assert.equal(r2.conversation.lastMessageDirection, "OUTBOUND");
+  assert.equal(r2.conversation.status, "IN_PROGRESS");
+
+  // 5. Hội thoại đã được gán cho Minh -> agent hiện tại gọi /messages/reply phải nhận 409 CONVERSATION_ASSIGNED_TO_OTHER
+  await handle("PATCH", convPath(cid), { assignedAgent: "agent.minh@omniinbox.local" });
+  await assert.rejects(
+    () => handle("POST", "/messages/reply", { conversationId: cid, content: "Nhân viên khác gửi đè" }),
+    (err) => err.status === 409 && err.body?.error === "CONVERSATION_ASSIGNED_TO_OTHER"
+  );
+  globalThis.localStorage.clear();
+});

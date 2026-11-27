@@ -5,6 +5,20 @@ export function sortConversations(list) {
   return [...list].sort((a, b) => (b.lastMessageAt || "").localeCompare(a.lastMessageAt || ""));
 }
 
+/**
+ * So sánh messageId theo epoch ms trước, sau đó localeCompare numeric để #2 luôn đứng trước #10.
+ */
+export function compareMessageIds(a, b) {
+  const idA = String(a || "");
+  const idB = String(b || "");
+  const epochA = Number((idA.match(/^MSG#(\d+)#/) || [])[1]);
+  const epochB = Number((idB.match(/^MSG#(\d+)#/) || [])[1]);
+  if (Number.isFinite(epochA) && Number.isFinite(epochB) && epochA !== epochB) {
+    return epochA - epochB;
+  }
+  return idA.localeCompare(idB, "en", { numeric: true });
+}
+
 export function upsertConversation(list, conv) {
   if (!conv || !conv.conversationId) return list;
   const idx = list.findIndex((c) => c.conversationId === conv.conversationId);
@@ -22,6 +36,8 @@ export function upsertConversation(list, conv) {
         ...conv,
         lastMessage: prev.lastMessage,
         lastMessageAt: prev.lastMessageAt,
+        lastMessageDirection: prev.lastMessageDirection,
+        lastInboundAt: prev.lastInboundAt,
       }
     : { ...prev, ...conv };
 
@@ -44,15 +60,17 @@ export function mergeMessage(list, msg) {
   const idx = list.findIndex((m) => m.messageId === msg.messageId);
   if (idx >= 0) {
     const prev = list[idx];
-    if ((prev.status === "SENT" && msg.status !== "SENT") ||
-        (prev.status === "UNKNOWN" && msg.status === "SENDING")) {
+    if (
+      (prev.status === "SENT" && msg.status !== "SENT") ||
+      (prev.status === "UNKNOWN" && msg.status === "SENDING")
+    ) {
       return list;
     }
     const next = [...list];
     next[idx] = { ...prev, ...msg };
     return next;
   }
-  return [...list, msg].sort((a, b) => a.messageId.localeCompare(b.messageId));
+  return [...list, msg].sort((a, b) => compareMessageIds(a.messageId, b.messageId));
 }
 
 // Hợp nhất mảng tin REST với các tin hiện có (bao gồm tin WS mới đến trong lúc REST đang bay)

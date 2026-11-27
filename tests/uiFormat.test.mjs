@@ -7,6 +7,8 @@ import {
   filterLocalMacros,
   formatAgentShort,
   formatRelativeTime,
+  formatWaitBadge,
+  isAwaitingReply,
   splitHighlight,
   tokenizeJson,
 } from "../src/services/uiFormat.js";
@@ -101,4 +103,20 @@ test("countMessageMatches đếm đúng số tin chứa từ khóa không phân 
   assert.equal(countMessageMatches(sample, ""), 0);
   assert.equal(countMessageMatches(sample, "size l"), 2);
   assert.equal(countMessageMatches(sample, "shopee"), 0);
+});
+
+test("isAwaitingReply và formatWaitBadge nhận diện đúng ca khách đang chờ >= 5 phút", () => {
+  const now = 1_732_264_800_000;
+  const freshInbound = { status: "OPEN", lastMessageDirection: "INBOUND", lastMessageAt: new Date(now - 120_000).toISOString() };
+  const wait7m = { status: "IN_PROGRESS", lastMessageDirection: "INBOUND", lastMessageAt: new Date(now - 7 * 60_000).toISOString() };
+  const wait20m = { status: "OPEN", lastMessageDirection: "INBOUND", lastMessageAt: new Date(now - 20 * 60_000).toISOString() };
+  const outboundReplied = { status: "IN_PROGRESS", lastMessageDirection: "OUTBOUND", lastMessageAt: new Date(now - 30 * 60_000).toISOString() };
+  const resolved = { status: "RESOLVED", lastMessageDirection: "INBOUND", lastMessageAt: new Date(now - 30 * 60_000).toISOString() };
+
+  assert.equal(isAwaitingReply(freshInbound), true);
+  assert.equal(formatWaitBadge(freshInbound, now), null);
+  assert.deepEqual(formatWaitBadge(wait7m, now), { label: "Chờ 7p", urgent: false });
+  assert.deepEqual(formatWaitBadge(wait20m, now), { label: "Chờ 20p", urgent: true });
+  assert.equal(isAwaitingReply(outboundReplied), false);
+  assert.equal(isAwaitingReply(resolved), false);
 });
