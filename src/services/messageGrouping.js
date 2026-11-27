@@ -1,4 +1,3 @@
-// FILE: src/services/messageGrouping.js
 // Gom nhóm tin nhắn liên tiếp cùng người gửi trong vòng 5 phút và chèn Date Divider.
 
 const FIVE_MIN_MS = 5 * 60 * 1000;

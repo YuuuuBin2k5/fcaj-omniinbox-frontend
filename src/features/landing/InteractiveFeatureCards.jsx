@@ -1,4 +1,3 @@
-// FILE: src/features/landing/InteractiveFeatureCards.jsx
 import { useState } from "react";
 import { motion } from "motion/react";
 import { CheckCircle2, Lock, MousePointer2, Radio, Repeat, RotateCcw, ShieldCheck } from "lucide-react";
@@ -6,7 +5,7 @@ import SpotlightCard from "../../components/SpotlightCard.jsx";
 import { ChannelIcon, StatusIcon } from "../../components/ChannelBadge.jsx";
 
 function OptimisticLockCard() {
-  const [phase, setPhase] = useState("resolved"); // "racing" | "resolved"
+  const [phase, setPhase] = useState("resolved");
 
   function replayRace() {
     setPhase("racing");
@@ -19,7 +18,7 @@ function OptimisticLockCard() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
             <Lock className="h-3.5 w-3.5" />
-            <span>01 · Optimistic Lock</span>
+            <span>01 · Khóa phân công</span>
           </div>
           <button
             type="button"
@@ -38,7 +37,6 @@ function OptimisticLockCard() {
         </p>
       </div>
 
-      {/* Interactive Race Stage with Animated Latency Bars */}
       <div className="mt-4 rounded-xl border border-zinc-200 bg-[#F8F8FA] p-3 dark:border-white/10 dark:bg-[#09090B]">
         <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white px-2.5 py-2 dark:border-white/[0.08] dark:bg-[#111114]">
           <div className="flex items-center gap-2">
@@ -105,7 +103,7 @@ function OptimisticLockCard() {
 }
 
 function IdempotencyReopenCard() {
-  const [mode, setMode] = useState("dedup"); // "dedup" | "reopen"
+  const [mode, setMode] = useState("dedup");
   const [tick, setTick] = useState(0);
   const [blockedCount, setBlockedCount] = useState(1);
 
@@ -115,7 +113,7 @@ function IdempotencyReopenCard() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>02 · DynamoDB Guard</span>
+            <span>02 · Chống trùng &amp; Mở lại</span>
           </div>
           <div className="inline-flex rounded-lg bg-zinc-100 p-0.5 text-[10px] font-semibold dark:bg-[#09090B]">
             <button
@@ -156,7 +154,6 @@ function IdempotencyReopenCard() {
         </p>
       </div>
 
-      {/* Interactive Funnel / Reopen Visual */}
       <div className="mt-4 rounded-xl border border-zinc-200 bg-[#F8F8FA] p-3 font-mono text-[10px] dark:border-white/10 dark:bg-[#09090B]">
         {mode === "dedup" ? (
           <motion.div
@@ -226,7 +223,7 @@ function ChannelTruthCard() {
       <div>
         <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
           <Radio className="h-3.5 w-3.5" />
-          <span>03 · Channel &amp; Security</span>
+          <span>03 · Kênh &amp; Bảo mật</span>
         </div>
         <h3 className="mt-2 text-base font-bold tracking-tight text-zinc-950 dark:text-white">
           1 Kênh thật · 3 Mô phỏng
@@ -237,7 +234,6 @@ function ChannelTruthCard() {
       </div>
 
       <div className="mt-4 space-y-2">
-        {/* Real Channel Row */}
         <div className="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/[0.08] px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/15">
@@ -251,7 +247,6 @@ function ChannelTruthCard() {
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
         </div>
 
-        {/* Simulated Channels Row */}
         <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/[0.08] px-3 py-2">
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1">

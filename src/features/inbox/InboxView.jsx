@@ -1,4 +1,3 @@
-// FILE: src/features/inbox/InboxView.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -113,7 +112,7 @@ export default function InboxView({
     try {
       localStorage.setItem("omni_sidebar_w", String(sidebarWidth));
     } catch {
-      // ignore storage errors
+      // Bỏ qua lỗi khi không truy cập được bộ nhớ cục bộ
     }
   }, [sidebarWidth]);
 
@@ -278,11 +277,11 @@ export default function InboxView({
       <div className="space-y-3 p-3.5 text-xs">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-            Contract Inspector
+            Thông tin hội thoại
           </span>
           <button
             type="button"
-            aria-label="Đóng Inspector"
+            aria-label="Đóng thông tin hội thoại"
             onClick={() => setShowInspector(false)}
             className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 lg:hidden dark:hover:bg-white/10 dark:hover:text-white"
           >
@@ -290,7 +289,6 @@ export default function InboxView({
           </button>
         </div>
 
-        {/* 2-Tab Switcher: Tổng quan | Raw JSON */}
         <div className="grid grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-0.5 text-[11px] dark:bg-[#09090B]">
           <button
             type="button"
@@ -313,21 +311,21 @@ export default function InboxView({
             }`}
           >
             <Code2 className="h-3 w-3" />
-            <span>Raw JSON</span>
+            <span>Dữ liệu JSON</span>
           </button>
         </div>
 
         {inspectorTab === "json" ? (
-          <JsonCodeBlock title="OmniConversations · Record" code={sanitizedConvJson} />
+          <JsonCodeBlock title="Bản ghi hội thoại" code={sanitizedConvJson} />
         ) : (
           <>
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-white/10 dark:bg-[#09090B]">
-              <div className="text-[10px] text-zinc-400">conversationId (PK)</div>
+              <div className="text-[10px] text-zinc-400">Mã hội thoại</div>
               <div className="mt-1 flex items-center justify-between gap-1.5 font-mono text-[11px] font-semibold text-zinc-900 dark:text-zinc-100">
                 <span className="truncate">{conv.conversationId}</span>
                 <button
                   type="button"
-                  aria-label="Sao chép conversationId"
+                  aria-label="Sao chép mã hội thoại"
                   onClick={() => copyConversationId(conv.conversationId)}
                   className="shrink-0 rounded p-0.5 hover:bg-zinc-200 dark:hover:bg-white/10"
                 >
@@ -344,21 +342,21 @@ export default function InboxView({
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="shrink-0 text-zinc-500">customerId</dt>
+                <dt className="shrink-0 text-zinc-500">Mã khách</dt>
                 <dd className="truncate font-mono text-[11px]">{conv.customerId}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="shrink-0 text-zinc-500">status</dt>
+                <dt className="shrink-0 text-zinc-500">Trạng thái</dt>
                 <dd className="font-mono text-[11px]">{conv.status}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="shrink-0 text-zinc-500">assignedAgent</dt>
+                <dt className="shrink-0 text-zinc-500">Phụ trách</dt>
                 <dd title={conv.assignedAgent} className="min-w-0 truncate text-right font-mono text-[11px]">
                   {conv.assignedAgent}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="shrink-0 text-zinc-500">unreadCount</dt>
+                <dt className="shrink-0 text-zinc-500">Chưa đọc</dt>
                 <dd className="font-mono text-[11px] tabular-nums">{conv.unreadCount ?? 0}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -366,27 +364,29 @@ export default function InboxView({
                 <dd className="font-mono text-[11px] tabular-nums">{msgs.length}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="shrink-0 text-zinc-500">Realtime</dt>
+                <dt className="shrink-0 text-zinc-500">Kết nối</dt>
                 <dd className="font-mono text-[11px]">{inbox.realtime}</dd>
               </div>
             </dl>
 
-            {/* DynamoDB Key & Delivery Scope (100% honest technical metadata) */}
             <div className="space-y-1.5 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 font-mono text-[10px] text-zinc-500 dark:border-white/10 dark:bg-[#09090B] dark:text-zinc-400">
               <div className="flex items-center justify-between gap-2">
-                <span>GSI</span>
+                <span>Chỉ mục</span>
                 <span className="text-zinc-800 dark:text-zinc-200">gsi-all-by-time</span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span>deliveredVia</span>
+                <span>Đường gửi</span>
                 <span className="text-zinc-800 dark:text-zinc-200">
-                  {SIMULATED_CHANNELS.has(conv.channel) ? "simulator (Mô phỏng)" : "telegram (Thật)"}
+                  {SIMULATED_CHANNELS.has(conv.channel) ? "Mô phỏng" : "Telegram thật"}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span>lastMessageDirection</span>
+                <span>Tin gần nhất</span>
                 <span className="text-zinc-800 dark:text-zinc-200">
-                  {conv.lastMessageDirection || (String(conv.lastMessage || "").startsWith("[NV] ") ? "OUTBOUND" : "INBOUND")}
+                  {(conv.lastMessageDirection || (String(conv.lastMessage || "").startsWith("[NV] ") ? "OUTBOUND" : "INBOUND")) ===
+                  "OUTBOUND"
+                    ? "Nhân viên gửi"
+                    : "Khách gửi"}
                 </span>
               </div>
             </div>
@@ -408,7 +408,7 @@ export default function InboxView({
             className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-100 dark:border-white/10 dark:bg-[#18181C] dark:text-zinc-200"
           >
             <FlaskConical className="h-3.5 w-3.5" />
-            Mở Simulator (Mô phỏng)
+            Mở trang Simulator
           </button>
         )}
       </div>
@@ -416,7 +416,6 @@ export default function InboxView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* Collapsible QA / Latency Drawer */}
       <AnimatePresence>
         {showQaTools && (
           <motion.div
@@ -427,7 +426,7 @@ export default function InboxView({
           >
             <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5 text-xs text-zinc-700 dark:text-zinc-300">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[11px] font-semibold">[LATENCY] Simulator → WS NEW_MESSAGE:</span>
+                <span className="font-mono text-[11px] font-semibold">Đo độ trễ → WS:</span>
                 <span className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[11px] tabular-nums dark:border-white/10 dark:bg-[#09090B]">
                   n={inbox.latencyStats.count}
                 </span>
@@ -444,7 +443,7 @@ export default function InboxView({
                     onClick={copyLatencyCsv}
                   >
                     {copiedCsv ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-                    {copiedCsv ? "Đã chép CSV" : "Copy CSV"}
+                    {copiedCsv ? "Đã chép CSV" : "Xuất CSV"}
                   </button>
                 )}
               </div>
@@ -459,7 +458,7 @@ export default function InboxView({
                       inbox.refresh();
                     }}
                   >
-                    Seed 2 khách trùng tên
+                    Tạo 2 khách trùng tên
                   </button>
                   <button
                     type="button"
@@ -469,7 +468,7 @@ export default function InboxView({
                       inbox.refresh();
                     }}
                   >
-                    Seed 60 hội thoại
+                    Tạo 60 hội thoại
                   </button>
                   <button
                     type="button"
@@ -481,7 +480,7 @@ export default function InboxView({
                     }`}
                     onClick={toggleFailNext}
                   >
-                    {failNextArmed ? "Đã bật lỗi kế tiếp (bấm tắt)" : "Giả lập lỗi tin gửi kế tiếp"}
+                    {failNextArmed ? "Đang bật lỗi (tắt)" : "Giả lập gửi lỗi"}
                   </button>
                   <button
                     type="button"
@@ -491,7 +490,7 @@ export default function InboxView({
                       window.location.reload();
                     }}
                   >
-                    Reset Mock DB
+                    Xóa dữ liệu thử
                   </button>
                 </div>
               )}
@@ -500,7 +499,6 @@ export default function InboxView({
         )}
       </AnimatePresence>
 
-      {/* Main Split Workspace */}
       <div className="flex min-h-0 flex-1" style={{ "--sidebar-w": `${sidebarWidth}px` }}>
         <aside
           className={`${
@@ -546,7 +544,6 @@ export default function InboxView({
           />
         </aside>
 
-        {/* Desktop Sidebar Resize Handle (lg+) */}
         <div
           role="separator"
           aria-orientation="vertical"
@@ -578,25 +575,25 @@ export default function InboxView({
                     : "Chọn một hội thoại để bắt đầu chăm sóc"}
                 </h3>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  Mọi hội thoại đa kênh được tách riêng theo <code className="font-mono">conversationId</code>.
+                  Chọn hội thoại bên trái để xem lịch sử và phản hồi khách.
                 </p>
 
                 {inbox.conversations.length > 0 && (
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     <div className="elevated-sheet rounded-xl border border-zinc-200/90 bg-white px-3 py-2 dark:border-white/10 dark:bg-[#111114]">
-                      <div className="font-mono text-[10px] text-zinc-400">OPEN</div>
+                      <div className="font-mono text-[10px] text-zinc-400">Mở</div>
                       <div className="mt-0.5 font-mono text-base font-bold tabular-nums text-amber-600 dark:text-amber-300">
                         {queueSummary.open}
                       </div>
                     </div>
                     <div className="elevated-sheet rounded-xl border border-zinc-200/90 bg-white px-3 py-2 dark:border-white/10 dark:bg-[#111114]">
-                      <div className="font-mono text-[10px] text-zinc-400">IN_PROGRESS</div>
+                      <div className="font-mono text-[10px] text-zinc-400">Đang tư vấn</div>
                       <div className="mt-0.5 font-mono text-base font-bold tabular-nums text-blue-600 dark:text-blue-400">
                         {queueSummary.inProgress}
                       </div>
                     </div>
                     <div className="elevated-sheet rounded-xl border border-zinc-200/90 bg-white px-3 py-2 dark:border-white/10 dark:bg-[#111114]">
-                      <div className="font-mono text-[10px] text-zinc-400">CHƯA ĐỌC</div>
+                      <div className="font-mono text-[10px] text-zinc-400">Chưa đọc</div>
                       <div className="mt-0.5 font-mono text-base font-bold tabular-nums text-rose-600 dark:text-rose-400">
                         {queueSummary.unread}
                       </div>
@@ -609,7 +606,7 @@ export default function InboxView({
                     ["J / K", "Chuyển hội thoại"],
                     ["/", "Tìm khách hàng"],
                     ["E / C", "Hoàn tất / Nhận nhanh"],
-                    ["Ctrl+K", "Command Palette"],
+                    ["Ctrl+K", "Bảng lệnh nhanh"],
                   ].map(([keyName, label]) => (
                     <div
                       key={keyName}
@@ -645,7 +642,7 @@ export default function InboxView({
                           className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-950 px-3.5 py-2 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
-                          Seed 2 khách trùng tên
+                          Tạo 2 khách trùng tên
                         </button>
                         <button
                           type="button"
@@ -653,7 +650,7 @@ export default function InboxView({
                           className="elevated-sheet inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-white/15 dark:bg-[#111114] dark:text-zinc-200"
                         >
                           <FlaskConical className="h-3.5 w-3.5" />
-                          Mở Simulator gửi tin
+                          Mở Simulator
                         </button>
                       </>
                     )
@@ -663,7 +660,6 @@ export default function InboxView({
             </div>
           ) : (
             <>
-              {/* Responsive Single/Multi-Row Thread Header (never collides or clips on mobile/tablet) */}
               <header className="relative z-20 flex flex-wrap items-center gap-2 border-b border-zinc-200/90 bg-white px-3 py-2.5 xl:flex-nowrap dark:border-white/[0.08] dark:bg-[#111114]">
                 <button
                   type="button"
@@ -688,10 +684,10 @@ export default function InboxView({
                     <ChannelBadge channel={conv.channel} />
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
-                    <span className="truncate">customerId: {conv.customerId}</span>
+                    <span className="truncate">Mã khách: {conv.customerId}</span>
                     <button
                       type="button"
-                      aria-label="Sao chép customerId"
+                      aria-label="Sao chép mã khách"
                       onClick={() => copyCustomerId(conv.customerId)}
                       className="inline-flex shrink-0 items-center gap-1 rounded px-1 py-0.5 hover:bg-zinc-100 dark:hover:bg-white/10"
                     >
@@ -771,7 +767,6 @@ export default function InboxView({
                 </div>
               </header>
 
-              {/* Collapsible In-Thread Message Search Bar */}
               <AnimatePresence>
                 {threadSearchOpen && (
                   <motion.div
@@ -819,7 +814,6 @@ export default function InboxView({
               </AnimatePresence>
 
               <div className="relative flex min-h-0 flex-1">
-                {/* Floating Sonner-Style Alert Pill (zero layout shift on ChatThread) */}
                 <AnimatePresence>
                   {inbox.notice && (
                     <motion.div
@@ -883,7 +877,6 @@ export default function InboxView({
                   />
                 </div>
 
-                {/* Desktop Inline Contract Inspector (lg+) */}
                 <AnimatePresence>
                   {showInspector && (
                     <motion.aside
@@ -897,7 +890,6 @@ export default function InboxView({
                   )}
                 </AnimatePresence>
 
-                {/* Tablet / Mobile Slide-Over Contract Inspector (< lg) */}
                 <AnimatePresence>
                   {showInspector && (
                     <motion.div
@@ -925,7 +917,6 @@ export default function InboxView({
           )}
         </main>
       </div>
-      {/* Ephemeral Action Confirmation Toast + Undo (top-center floating pill, never occludes Send or Header) */}
       <AnimatePresence>
         {inbox.toast && (
           <motion.div

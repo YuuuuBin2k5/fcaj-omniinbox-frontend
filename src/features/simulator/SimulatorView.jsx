@@ -1,4 +1,3 @@
-// FILE: src/features/simulator/SimulatorView.jsx
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import {
@@ -26,21 +25,21 @@ const CHANNELS = [
   {
     id: "shopee",
     name: "Shopee Chat",
-    label: "Shopee Chat (Mô phỏng)",
+    label: "Shopee Chat",
     headerBg: "bg-[#EE4D2D]",
     activeCard: "border-orange-500/50 bg-orange-500/10 text-orange-700 dark:text-orange-300",
   },
   {
     id: "zalo",
     name: "Zalo OA",
-    label: "Zalo OA (Mô phỏng)",
+    label: "Zalo OA",
     headerBg: "bg-[#0068FF]",
     activeCard: "border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-300",
   },
   {
     id: "webchat",
     name: "WebChat",
-    label: "Website LiveChat (Mô phỏng)",
+    label: "WebChat",
     headerBg: "bg-[#7C3AED]",
     activeCard: "border-violet-500/50 bg-violet-500/10 text-violet-700 dark:text-violet-300",
   },
@@ -71,7 +70,7 @@ const formatClock = () => new Date().toLocaleTimeString("vi-VN", { hour: "2-digi
 export default function SimulatorView({ onOpenInbox }) {
   const [channel, setChannel] = useState("shopee");
   const [customerId, setCustomerId] = useState("shopee_user_889");
-  const [customerName, setCustomerName] = useState("Trần Thị Bích - Khách Shopee (Mô phỏng)");
+  const [customerName, setCustomerName] = useState("Trần Thị Bích");
   const [externalMessageId, setExternalMessageId] = useState(rid());
   const [text, setText] = useState("Áo này còn size M không shop?");
   const [log, setLog] = useState([]);
@@ -244,7 +243,7 @@ export default function SimulatorView({ onOpenInbox }) {
   const buildPayload = (extra = {}) => ({
     externalMessageId: externalMessageId.trim() || rid(),
     customerId: cleanCustomerId,
-    customerName: customerName.trim() || `Khách ${channel.toUpperCase()} (Mô phỏng)`,
+    customerName: customerName.trim() || `Khách ${channel.toUpperCase()}`,
     text,
     sentAtMs: Date.now(),
     ...extra,
@@ -340,7 +339,7 @@ export default function SimulatorView({ onOpenInbox }) {
       channel,
       externalMessageId: externalMessageId.trim() || "<auto>",
       customerId: cleanCustomerId,
-      customerName: customerName.trim() || `Khách ${channel.toUpperCase()} (Mô phỏng)`,
+      customerName: customerName.trim() || `Khách ${channel.toUpperCase()}`,
       text,
       sentAtMs: "<Date.now()>",
     },
@@ -350,16 +349,15 @@ export default function SimulatorView({ onOpenInbox }) {
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto bg-[#F6F7F9] p-3.5 md:grid-cols-12 md:p-4 dark:bg-[#09090B]">
-      {/* Left: Compact Testing Workbench */}
       <section className="elevated-sheet flex flex-col justify-between space-y-3 rounded-2xl border border-zinc-200/90 bg-white p-4 md:col-span-7 dark:border-white/[0.08] dark:bg-[#111114]">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300">
-                Simulated Channel Workbench
+                Mô phỏng
               </span>
               <h2 className="mt-1 text-base font-bold tracking-tight text-zinc-950 dark:text-white">
-                Giả lập khách hàng – MÔ PHỎNG (không phải kênh thật)
+                Giả lập khách hàng đa kênh
               </h2>
             </div>
             <span
@@ -370,7 +368,6 @@ export default function SimulatorView({ onOpenInbox }) {
             </span>
           </div>
 
-          {/* Interactive Channel Selector Cards */}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {CHANNELS.map((c) => {
               const active = channel === c.id;
@@ -407,8 +404,8 @@ export default function SimulatorView({ onOpenInbox }) {
             {[
               { ch: "shopee", id: "shopee_a1", name: "Nguyễn Văn A", label: "Shopee A1" },
               { ch: "shopee", id: "shopee_a2", name: "Nguyễn Văn A", label: "Shopee A2" },
-              { ch: "zalo", id: "zalo_minh_01", name: "Lê Minh (Zalo · Mô phỏng)", label: "Zalo OA" },
-              { ch: "webchat", id: "web_guest_09", name: "Khách Web #09 (Mô phỏng)", label: "WebChat" },
+              { ch: "zalo", id: "zalo_minh_01", name: "Lê Minh", label: "Zalo OA" },
+              { ch: "webchat", id: "web_guest_09", name: "Khách Web #09", label: "WebChat" },
             ].map((p) => {
               const isPresetActive = channel === p.ch && cleanCustomerId === p.id;
               return (
@@ -447,28 +444,28 @@ export default function SimulatorView({ onOpenInbox }) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">customerId</label>
+              <label className="mb-1 block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">Mã khách</label>
               <input
-                aria-label="customerId"
+                aria-label="Mã khách"
                 className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-1.5 font-mono text-xs text-zinc-900 dark:border-white/15 dark:bg-[#09090B] dark:text-white"
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
-                placeholder="customerId"
+                placeholder="shopee_user_889"
               />
             </div>
           </div>
 
           <div>
             <label className="mb-1 block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-              externalMessageId (tự sinh hoặc sửa tay để test chống trùng)
+              Mã tin nhắn
             </label>
             <div className="relative flex items-center">
               <input
-                aria-label="externalMessageId"
+                aria-label="Mã tin nhắn"
                 className="w-full rounded-xl border border-zinc-300 bg-zinc-50 py-1.5 pl-3 pr-16 font-mono text-xs text-zinc-900 dark:border-white/15 dark:bg-[#09090B] dark:text-white"
                 value={externalMessageId}
                 onChange={(e) => setExternalMessageId(e.target.value)}
-                placeholder="externalMessageId (sửa tay được)"
+                placeholder="Tự sinh hoặc nhập tay để thử chống trùng"
               />
               <div className="absolute right-1.5 flex items-center gap-1">
                 <button
@@ -496,7 +493,7 @@ export default function SimulatorView({ onOpenInbox }) {
           <div>
             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
               <label className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                Nội dung tin nhắn giả lập <span className="font-mono font-normal opacity-70">(Enter gửi)</span>
+                Nội dung tin nhắn <span className="font-mono font-normal opacity-70">(Enter gửi)</span>
               </label>
               <div className="flex flex-wrap items-center gap-1">
                 {QUICK_SCENARIO_CHIPS.map((chip) => (
@@ -545,7 +542,7 @@ export default function SimulatorView({ onOpenInbox }) {
               onClick={sendDuplicate}
             >
               <Repeat className="h-3.5 w-3.5" />
-              Bắn lặp lại cùng Message ID (Test chống trùng)
+              Gửi trùng ID
             </motion.button>
             {FAULT_UI && (
               <button
@@ -555,13 +552,12 @@ export default function SimulatorView({ onOpenInbox }) {
                 onClick={sendFault}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Gửi Payload Lỗi (Test DLQ)
+                Gửi lỗi DLQ
               </button>
             )}
           </div>
         </div>
 
-        {/* Bottom Compact Stack: 3-Milestone Stepper + Tabbed Console (Log | JSON Payload) */}
         <div className="space-y-2.5">
           <div
             className={`rounded-xl border p-2.5 text-xs ${
@@ -611,7 +607,7 @@ export default function SimulatorView({ onOpenInbox }) {
                     : "bg-zinc-200/70 text-zinc-500 dark:bg-white/5"
                 }`}
               >
-                2. HTTP 200 QUEUED
+                2. Đã xếp hàng
               </div>
               <div
                 className={`rounded-lg px-2 py-1 text-center ${
@@ -625,7 +621,6 @@ export default function SimulatorView({ onOpenInbox }) {
             </div>
           </div>
 
-          {/* 2-Tab Console: Activity Log | Live Syntax-Highlighted Payload */}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <div className="inline-flex rounded-lg bg-zinc-100 p-0.5 text-[11px] dark:bg-[#09090B]">
@@ -651,7 +646,7 @@ export default function SimulatorView({ onOpenInbox }) {
                   }`}
                 >
                   <Code2 className="h-3 w-3" />
-                  <span>JSON Payload</span>
+                  <span>Dữ liệu JSON</span>
                 </button>
               </div>
 
@@ -670,7 +665,7 @@ export default function SimulatorView({ onOpenInbox }) {
             {consoleTab === "log" ? (
               <ul className="h-32 space-y-1 overflow-y-auto rounded-xl border border-zinc-200 bg-[#0B0C10] p-2.5 font-mono text-[11px] dark:border-white/10">
                 {log.length === 0 ? (
-                  <li className="text-zinc-500">// Nhật ký gửi webhook sẽ hiện tại đây…</li>
+                  <li className="text-zinc-500">Chưa có nhật ký gửi webhook…</li>
                 ) : (
                   log.map((item) => {
                     const tagCls =
@@ -696,11 +691,9 @@ export default function SimulatorView({ onOpenInbox }) {
         </div>
       </section>
 
-      {/* Right: Realistic Simulated Customer Phone Hardware Frame */}
       <section className="flex flex-col md:col-span-5">
         <div className="elevated-sheet mx-auto flex w-full max-w-[388px] flex-1 flex-col rounded-[40px] border border-zinc-300/90 bg-zinc-900 p-2 shadow-2xl dark:border-white/15 dark:bg-[#17171B]">
           <div className="flex flex-1 flex-col overflow-hidden rounded-[32px] border border-black/15 bg-white dark:border-white/10 dark:bg-[#0D0D10]">
-            {/* Device Status Bar + Dynamic Island */}
             <div className={`${activeChannelMeta.headerBg} px-4 pb-3 pt-2.5 text-white`}>
               <div className="mb-2 flex items-center justify-between text-[10px] font-semibold text-white/95">
                 <span className="font-mono tabular-nums">{clockTime}</span>
@@ -736,10 +729,7 @@ export default function SimulatorView({ onOpenInbox }) {
                     sau {roundTripByConv[currentConvId]}s
                   </span>
                 )}
-                <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300">
-                  sentAtMs ✓
-                </span>
-                <span className="tabular-nums text-zinc-400">{replies.length} reply</span>
+                <span className="tabular-nums text-zinc-400">{replies.length} phản hồi</span>
                 {timeline.length > 0 && (
                   <button
                     type="button"
@@ -760,7 +750,6 @@ export default function SimulatorView({ onOpenInbox }) {
               </div>
             </div>
 
-            {/* Phone Chat Screen */}
             <div
               ref={phoneScrollRef}
               className="dot-canvas gutter-stable flex-1 space-y-2.5 overflow-y-auto bg-[#F6F7F9] p-4 dark:bg-[#09090B]"
@@ -784,7 +773,7 @@ export default function SimulatorView({ onOpenInbox }) {
                       className="ml-auto max-w-[82%] rounded-2xl rounded-br-md bg-zinc-900 px-3 py-2 text-xs text-white shadow-xs dark:bg-zinc-200 dark:text-zinc-950"
                     >
                       <div className="flex items-center justify-between gap-2 text-[10px] opacity-70">
-                        <span className="truncate">{m.senderName} (Khách · Mô phỏng)</span>
+                        <span className="truncate">{m.senderName}</span>
                         {msgTime && <span className="shrink-0 font-mono tabular-nums">{msgTime}</span>}
                       </div>
                       <div className="mt-0.5 leading-relaxed">{m.content}</div>
@@ -807,11 +796,6 @@ export default function SimulatorView({ onOpenInbox }) {
                         {msgTime && <span className="shrink-0 tabular-nums opacity-75">{msgTime}</span>}
                       </div>
                       <div className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{m.content}</div>
-                      {m.deliveredVia === "simulator" && (
-                        <div className="mt-1 font-mono text-[9px] text-emerald-700/80 dark:text-emerald-300/80">
-                          Đã nhận từ Portal · Mô phỏng (WS)
-                        </div>
-                      )}
                     </motion.div>
                   );
                 })
@@ -824,7 +808,6 @@ export default function SimulatorView({ onOpenInbox }) {
               )}
             </div>
 
-            {/* Interactive Phone Quick-Send Bar + Home Indicator */}
             <div className="border-t border-zinc-200 bg-white px-3 pb-2 pt-2 dark:border-white/10 dark:bg-[#111114]">
               <form
                 onSubmit={(e) => {
@@ -837,7 +820,7 @@ export default function SimulatorView({ onOpenInbox }) {
                   aria-label="Gửi tin trực tiếp từ điện thoại mô phỏng"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Nhắn thử từ điện thoại (Mô phỏng)…"
+                  placeholder="Nhập tin nhắn khách hàng…"
                   className="min-w-0 flex-1 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-white/10 dark:bg-[#09090B] dark:text-white"
                 />
                 <button
@@ -852,7 +835,7 @@ export default function SimulatorView({ onOpenInbox }) {
               <div className="mt-2 flex items-center justify-between font-mono text-[9px] text-zinc-400">
                 <span>{wsMeta.label}</span>
                 <span className="h-1 w-24 rounded-full bg-zinc-300 dark:bg-zinc-700" aria-hidden="true" />
-                <span>simulator</span>
+                <span aria-hidden="true" className="w-12" />
               </div>
             </div>
           </div>

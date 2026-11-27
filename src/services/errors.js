@@ -1,4 +1,3 @@
-// FILE: src/services/errors.js
 export class ApiError extends Error {
   constructor(status, body = {}) {
     super(body.error || body.message || `HTTP ${status}`);

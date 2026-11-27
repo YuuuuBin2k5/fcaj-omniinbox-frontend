@@ -1,4 +1,3 @@
-// FILE: src/components/BrandLogo.jsx
 export default function BrandLogo({ size = 28, showText = true, subtitle = "" }) {
   return (
     <div className="flex items-center gap-2.5 select-none">
@@ -7,7 +6,6 @@ export default function BrandLogo({ size = 28, showText = true, subtitle = "" })
         className="surface-specular relative flex shrink-0 items-center justify-center rounded-xl border border-zinc-300/90 bg-zinc-950 shadow-xs dark:border-white/15 dark:bg-[#141418]"
       >
         <svg viewBox="0 0 28 28" className="h-[70%] w-[70%]" fill="none" aria-hidden="true">
-          {/* 3 đường hội tụ đa kênh vào 1 hộp thư */}
           <path
             d="M5.5 7.5 9.5 11M22.5 7.5 18.5 11"
             stroke="#52525B"
@@ -29,9 +27,6 @@ export default function BrandLogo({ size = 28, showText = true, subtitle = "" })
         <div className="leading-none">
           <div className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-zinc-950 dark:text-white">
             <span>OmniInbox</span>
-            <span className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-600 dark:border-white/15 dark:bg-white/[0.06] dark:text-zinc-300">
-              v2
-            </span>
           </div>
           {subtitle && <div className="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">{subtitle}</div>}
         </div>

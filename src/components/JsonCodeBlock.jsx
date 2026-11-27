@@ -1,4 +1,3 @@
-// FILE: src/components/JsonCodeBlock.jsx
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { tokenizeJson } from "../services/uiFormat.js";

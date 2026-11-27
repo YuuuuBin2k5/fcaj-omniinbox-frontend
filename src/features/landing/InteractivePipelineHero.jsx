@@ -1,5 +1,3 @@
-// FILE: src/features/landing/InteractivePipelineHero.jsx
-// Playable Split-World AWS Event Topology Sandbox: 4-Channel Bezier Convergence + 4-Node SVG Conduit + Wire JSON + Auto Demo.
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Code2, Play, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
@@ -403,14 +401,13 @@ export default function InteractivePipelineHero() {
         +
       </span>
 
-      {/* Top Window Bar + Playable Trigger Buttons */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/90 pb-3.5 dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
           <span className="ml-2 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
-            AWS Event Sandbox · Interactive
+            Luồng sự kiện AWS
           </span>
         </div>
 
@@ -446,7 +443,7 @@ export default function InteractivePipelineHero() {
             }`}
           >
             <Sparkles className="h-3 w-3" />
-            <span>{autoRunning ? "Đang chạy Auto…" : "Auto Demo"}</span>
+            <span>{autoRunning ? "Đang chạy…" : "Chạy tự động"}</span>
           </motion.button>
 
           <button
@@ -476,7 +473,6 @@ export default function InteractivePipelineHero() {
         </div>
       </div>
 
-      {/* Horizontal Topology Conduit Graph (4 Nodes connected by live SVG rails) */}
       <div className="mt-4 grid grid-cols-2 items-center gap-2 sm:grid-cols-7">
         {TOPOLOGY_NODES.map((node, idx) => {
           const done = stepIdx > idx || (stepIdx === idx && !running);
@@ -540,14 +536,12 @@ export default function InteractivePipelineHero() {
         })}
       </div>
 
-      {/* Split World: Left Pipeline Trace + Wire Payload | Right Live Mini Inbox */}
       <div className="mt-3.5 grid gap-4 lg:grid-cols-12">
-        {/* Left: AWS Pipeline Stepper */}
         <div className="flex flex-col justify-between rounded-xl border border-zinc-200/90 bg-[#F8F8FA] p-4 lg:col-span-6 dark:border-white/[0.08] dark:bg-[#09090B]">
           <div>
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                Pipeline Trace · {sc.tag}
+                Tiến trình · {sc.tag}
               </span>
               {running && (
                 <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-sky-600 dark:text-sky-400">
@@ -606,14 +600,13 @@ export default function InteractivePipelineHero() {
           </div>
         </div>
 
-        {/* Right: Mini Live Inbox */}
         <div className="dot-canvas flex flex-col justify-between rounded-xl border border-zinc-200/90 bg-white p-4 lg:col-span-6 dark:border-white/[0.08] dark:bg-[#0D0D10]">
           <div>
             <div className="flex items-center justify-between border-b border-zinc-200/90 pb-2.5 dark:border-white/[0.08]">
               <div className="text-xs font-bold text-zinc-900 dark:text-white">
-                Mini Agent Inbox (Tách theo conversationId)
+                Hộp thư nhân viên
               </div>
-              <span className="font-mono text-[10px] text-zinc-400">Bấm thẻ xem khóa DynamoDB</span>
+              <span className="font-mono text-[10px] text-zinc-400">Chọn thẻ để xem khóa</span>
             </div>
 
             <div className="mt-3 space-y-2.5">
@@ -651,12 +644,12 @@ export default function InteractivePipelineHero() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 font-mono text-[10px] text-zinc-400">customerId: {c.customerId}</div>
+                      <div className="mt-1 font-mono text-[10px] text-zinc-400">ID: {c.customerId}</div>
                       <div className="mt-1.5 text-xs text-zinc-700 dark:text-zinc-200">{c.text}</div>
                       <div className="mt-2 flex items-center justify-between border-t border-zinc-200/80 pt-2 dark:border-white/10">
                         <StatusDot status={c.status} showCode />
                         <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
-                          agent: <b className="text-zinc-800 dark:text-zinc-200">{c.agent}</b>
+                          Phụ trách: <b className="text-zinc-800 dark:text-zinc-200">{c.agent}</b>
                         </span>
                       </div>
                     </motion.button>
@@ -671,7 +664,6 @@ export default function InteractivePipelineHero() {
               <span>
                 PK: <strong className="text-zinc-900 dark:text-zinc-100">{inspectedConv.pk}</strong>
               </span>
-              <span>Cô lập theo conversationId</span>
             </div>
 
             {activeScenario === "conflict409" && stepIdx >= 2 && (

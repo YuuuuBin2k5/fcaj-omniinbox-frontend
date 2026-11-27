@@ -1,4 +1,3 @@
-// FILE: src/components/CustomSelect.jsx
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";

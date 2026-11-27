@@ -1,4 +1,3 @@
-// FILE: src/services/auth.js
 import { CognitoUserPool, CognitoUser, AuthenticationDetails } from "amazon-cognito-identity-js";
 
 const ENV = (typeof import.meta !== "undefined" && import.meta.env) || {};

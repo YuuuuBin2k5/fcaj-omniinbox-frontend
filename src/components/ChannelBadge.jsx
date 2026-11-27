@@ -1,4 +1,3 @@
-// FILE: src/components/ChannelBadge.jsx
 // Custom SVG vector icons cho 4 kênh & trạng thái hình học chuẩn Linear (0 emoji rác).
 
 export function ChannelIcon({ channel, className = "h-3.5 w-3.5" }) {

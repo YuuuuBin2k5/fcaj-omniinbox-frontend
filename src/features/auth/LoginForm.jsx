@@ -1,4 +1,3 @@
-// FILE: src/features/auth/LoginForm.jsx
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Loader2, Lock, ShieldCheck, X } from "lucide-react";
@@ -18,9 +17,9 @@ const PERSONA_RING = [
 ];
 
 const PERSONA_ROLES = [
-  "Agent #1 · Nhận & xử lý chính",
-  "Agent #2 · Mở tab 2 test xung đột 409",
-  "Agent #3 · Dự phòng bàn giao ca",
+  "Nhân viên #1 · Tiếp nhận chính",
+  "Nhân viên #2 · Mở tab thứ 2 thử xung đột",
+  "Nhân viên #3 · Dự phòng bàn giao",
 ];
 
 function personaInitials(value) {
@@ -110,7 +109,6 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
       onClick={(e) => e.stopPropagation()}
       className="elevated-sheet relative w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200/90 bg-white dark:border-white/15 dark:bg-[#111114]"
     >
-      {/* Subtle Blueprint Top Header */}
       <div className="hero-grid-bg relative border-b border-zinc-200/80 bg-zinc-50/70 px-6 pb-4 pt-5 dark:border-white/[0.08] dark:bg-[#0D0D10]">
         {onClose && (
           <button
@@ -130,12 +128,12 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
           {USE_MOCK ? (
             <>
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              Chế độ Local Mock · Chọn persona để thử tranh nhận 409
+              Chế độ Local Mock · Chọn tài khoản dùng thử
             </>
           ) : (
             <>
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-              Xác thực qua Amazon Cognito User Pool (SRP)
+              Xác thực qua Amazon Cognito
             </>
           )}
         </p>
@@ -147,7 +145,7 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
             {USE_MOCK && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  <span>Nhân viên Demo (Mock Persona)</span>
+                  <span>Tài khoản dùng thử</span>
                   <span>Phím 1–{MOCK_AGENTS.length}</span>
                 </div>
                 <div className="grid gap-2">
@@ -220,7 +218,7 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
                   onClick={() => setShowCustomInput((v) => !v)}
                   className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                 >
-                  <span>Hoặc nhập tên đăng nhập tùy chỉnh</span>
+                  <span>Hoặc nhập email đăng nhập khác</span>
                   <ChevronDown className={`h-3 w-3 transition-transform ${showCustomInput ? "rotate-180" : ""}`} />
                 </button>
                 {showCustomInput && (
@@ -236,7 +234,7 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
                 )}
                 <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-200">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                  <span>Local Mock Mode · Không cần mật khẩu Cognito</span>
+                  <span>Không cần mật khẩu ở chế độ dùng thử</span>
                 </div>
               </div>
             ) : (
@@ -373,11 +371,10 @@ export default function LoginForm({ onDone, onClose, asModal = false }) {
         </motion.button>
       </div>
 
-      {/* Security Posture Footer */}
       <div className="flex items-center justify-between border-t border-zinc-200/80 bg-zinc-50/70 px-6 py-2.5 font-mono text-[10px] text-zinc-500 dark:border-white/[0.08] dark:bg-[#09090B] dark:text-zinc-400">
         <span className="inline-flex items-center gap-1.5">
           <Lock className="h-3 w-3" />
-          {USE_MOCK ? "Local Mock Session · Không gọi AWS" : "Amazon Cognito SRP · Zero Secret"}
+          {USE_MOCK ? "Phiên Local Mock" : "Bảo mật qua Amazon Cognito"}
         </span>
         {asModal && <span>ESC đóng</span>}
       </div>

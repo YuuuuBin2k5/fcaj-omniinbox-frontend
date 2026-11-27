@@ -1,4 +1,3 @@
-// FILE: src/features/landing/ChaosToCalmSlider.jsx
 // Thanh kéo so sánh trực quan Trước (4 app rời rạc) <-> Sau (1 hộp thư OmniInbox).
 import { useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Lock, MoveHorizontal } from "lucide-react";
@@ -34,13 +33,12 @@ export default function ChaosToCalmSlider() {
     try {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     } catch {
-      // ignore if capture already released
+      // Bỏ qua nếu trình duyệt đã nhả pointer capture trước đó
     }
   }
 
   return (
     <div className="elevated-sheet rounded-2xl border border-zinc-200/90 bg-white p-3 sm:p-4 dark:border-white/[0.09] dark:bg-[#111114]">
-      {/* Quick Snap Toolbar */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <button
@@ -70,14 +68,13 @@ export default function ChaosToCalmSlider() {
         </div>
 
         <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
-          <span>Kéo thanh hoặc dùng ← / →</span>
+          <span>Kéo hoặc dùng ← / →</span>
           <span className="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-semibold tabular-nums text-zinc-800 dark:border-white/10 dark:bg-[#09090B] dark:text-zinc-200">
             {splitPct}%
           </span>
         </div>
       </div>
 
-      {/* Interactive Split Stage */}
       <div
         ref={trackRef}
         onPointerDown={handlePointerDown}
@@ -86,7 +83,6 @@ export default function ChaosToCalmSlider() {
         onPointerCancel={handlePointerUp}
         className="relative min-h-[268px] cursor-ew-resize select-none overflow-hidden rounded-xl border border-zinc-200 bg-[#F8F8FA] transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500/60 sm:min-h-[280px] dark:border-white/10 dark:bg-[#09090B]"
       >
-        {/* Base Layer: AFTER (Calm Unified Inbox) */}
         <div className="dot-canvas absolute inset-0 flex flex-col justify-between p-4 sm:p-5">
           <div className="flex items-center justify-end gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
@@ -135,7 +131,6 @@ export default function ChaosToCalmSlider() {
           </div>
         </div>
 
-        {/* Clipped Overlay Layer: BEFORE (4 Cluttered Apps) */}
         <div
           style={{ clipPath: `inset(0 ${100 - splitPct}% 0 0)` }}
           aria-hidden="true"
@@ -201,7 +196,6 @@ export default function ChaosToCalmSlider() {
           </div>
         </div>
 
-        {/* Keyboard Accessible Overlay Range Input (precedes Grip so peer-focus-visible styles apply) */}
         <input
           type="range"
           min={12}
@@ -213,7 +207,6 @@ export default function ChaosToCalmSlider() {
           className="peer sr-only"
         />
 
-        {/* Center Draggable Divider & Grip */}
         <div
           style={{ left: `${splitPct}%` }}
           aria-hidden="true"

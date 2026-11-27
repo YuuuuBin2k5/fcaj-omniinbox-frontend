@@ -1,4 +1,3 @@
-// FILE: src/features/inbox/ChatThread.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowDown, Loader2 } from "lucide-react";

@@ -1,4 +1,3 @@
-// FILE: src/features/inbox/AssignSelect.jsx
 import { UserCheck, UserMinus } from "lucide-react";
 import { getAgentName } from "../../services/auth.js";
 import { formatAgentShort } from "../../services/uiFormat.js";

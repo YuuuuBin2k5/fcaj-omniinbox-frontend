@@ -1,13 +1,10 @@
-// FILE: src/services/inboxReducer.js
 // Pure reducer: không I/O, không mất tin WS mới khi REST trả chậm, không để sự kiện cũ đè mới.
 
 export function sortConversations(list) {
   return [...list].sort((a, b) => (b.lastMessageAt || "").localeCompare(a.lastMessageAt || ""));
 }
 
-/**
- * So sánh messageId theo epoch ms trước, sau đó localeCompare numeric để #2 luôn đứng trước #10.
- */
+// So sánh messageId theo epoch ms trước, sau đó localeCompare numeric để #2 luôn đứng trước #10.
 export function compareMessageIds(a, b) {
   const idA = String(a || "");
   const idB = String(b || "");

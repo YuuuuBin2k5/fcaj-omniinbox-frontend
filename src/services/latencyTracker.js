@@ -1,4 +1,3 @@
-// FILE: src/services/latencyTracker.js
 // Đo thời gian từ lúc Simulator gửi (clientSentAtMs) đến lúc Portal nhận sự kiện WebSocket NEW_MESSAGE.
 // Quy tắc: chạy 2 tab trên cùng 1 máy, ghi đúng 1 mẫu cho mỗi messageId duy nhất.
 

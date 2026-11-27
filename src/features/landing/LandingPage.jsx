@@ -1,4 +1,3 @@
-// FILE: src/features/landing/LandingPage.jsx
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2, Command, Moon, Sun, Zap } from "lucide-react";
@@ -60,7 +59,6 @@ export default function LandingPage({
       <div className="grain-overlay pointer-events-none fixed inset-0 z-[1]" />
       <div className="pointer-events-none absolute -top-48 left-1/2 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-sky-500/[0.09] blur-3xl dark:bg-sky-500/[0.11]" />
 
-      {/* Floating Glass Header */}
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/80 glass-panel dark:border-white/[0.08] dark:bg-[#09090B]/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <BrandLogo subtitle="Unified Inbox" />
@@ -163,7 +161,6 @@ export default function LandingPage({
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl border-x border-zinc-200/70 px-4 pb-16 pt-10 sm:px-8 sm:pt-12 dark:border-white/[0.06]">
-        {/* Crisp Hero + 3D Convergence Artwork */}
         <section className="text-center">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -224,19 +221,18 @@ export default function LandingPage({
                 onClick={onOpenSimulator}
                 className="elevated-sheet inline-flex items-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-zinc-400 dark:border-white/15 dark:bg-[#111114] dark:text-zinc-100 dark:hover:border-white/30"
               >
-                Mở Customer Simulator (Mô phỏng)
+                Mở Simulator
               </motion.button>
             ) : (
               <a
                 href="#preview"
                 className="elevated-sheet inline-flex items-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 dark:border-white/15 dark:bg-[#111114] dark:text-zinc-200 dark:hover:border-white/30"
               >
-                Thử Sandbox tương tác ↓
+                Xem mô phỏng luồng ↓
               </a>
             )}
           </motion.div>
 
-          {/* Visual 3D Convergence Showcase */}
           <div className="elevated-sheet relative mt-8 flex min-h-[168px] flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200/90 bg-[#09090B] p-4 text-left sm:min-h-[190px] sm:flex-row sm:items-end sm:p-5 dark:border-white/[0.1]">
             <img
               src="/art/hero-convergence-3d.jpg"
@@ -267,51 +263,44 @@ export default function LandingPage({
           </div>
         </section>
 
-        {/* Section 01: Playable Interactive Sandbox */}
         <section id="preview" className="mt-8 scroll-mt-24">
           <div className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-            01 / Interactive Event Sandbox
+            01 / Mô phỏng trực tiếp
           </div>
           <InteractivePipelineHero />
         </section>
 
-        {/* Section 02: Tactile Before/After Comparison Slider */}
         <section id="compare" className="mt-12 scroll-mt-24">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <div>
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                02 / Before ↔ After
+                02 / Trước &amp; Sau
               </div>
               <h2 className="mt-1 text-xl font-bold tracking-tight text-zinc-950 sm:text-2xl dark:text-white">
                 Kéo để so sánh: 4 App rời vs 1 Hộp thư
               </h2>
             </div>
-            <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">Interactive Comparison</span>
+            <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">Kéo để so sánh</span>
           </div>
 
           <ChaosToCalmSlider />
         </section>
 
-        {/* Section 03: Touch-to-Understand Visual Mechanics */}
         <section id="mechanics" className="mt-12 scroll-mt-24">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
             <div>
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                03 / Core Mechanics
+                03 / Cơ chế cốt lõi
               </div>
               <h2 className="mt-1 text-xl font-bold tracking-tight text-zinc-950 sm:text-2xl dark:text-white">
                 Chạm để xem hệ thống bảo vệ từng tin nhắn
               </h2>
             </div>
-            <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
-              React 19 · Tailwind v4 · AWS Node 22 arm64
-            </span>
           </div>
 
           <InteractiveFeatureCards />
         </section>
 
-        {/* Section 03: Flagship Obsidian 3D Launch Banner */}
         <section
           id="launch"
           className="sandbox-rim elevated-sheet relative mt-12 scroll-mt-24 overflow-hidden rounded-3xl border border-zinc-300/80 bg-[#09090B] p-6 text-white sm:p-8 dark:border-white/[0.12]"
@@ -327,15 +316,15 @@ export default function LandingPage({
 
           <div className="relative z-10 max-w-lg">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-400">
-              Live Demo Ready
+              Sẵn sàng trải nghiệm
             </div>
             <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
               Mở hộp thư và thử ngay.
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-zinc-300 sm:text-sm">
               {USE_MOCK
-                ? "Chạy tức thì ở Local Mock Mode (hỗ trợ 2 tab) hoặc nối AWS thật bằng 1 biến môi trường."
-                : "Đang kết nối trực tiếp Amazon Cognito, API Gateway REST và WebSocket."}
+                ? "Chạy ngay trên trình duyệt với dữ liệu thử, hoặc kết nối trực tiếp AWS khi cấu hình xong."
+                : "Đang kết nối trực tiếp với hạ tầng AWS thời gian thực."}
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <button
@@ -352,20 +341,19 @@ export default function LandingPage({
                   onClick={onOpenSimulator}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-white/20 glass-panel"
                 >
-                  Mở Simulator (Mô phỏng)
+                  Mở Simulator
                 </button>
               )}
             </div>
           </div>
         </section>
 
-        {/* Minimal Footer */}
         <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-200/80 pt-5 text-xs text-zinc-500 dark:border-white/[0.08] dark:text-zinc-400">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             <span>OmniInbox · AWS First Cloud Journey (FCAJ)</span>
           </div>
-          <span className="font-mono text-[11px]">React 19 · Tailwind v4 · Serverless</span>
+          <span className="font-mono text-[11px]">Serverless · ap-southeast-1</span>
         </footer>
       </main>
     </div>

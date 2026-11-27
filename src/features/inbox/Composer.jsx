@@ -1,4 +1,3 @@
-// FILE: src/features/inbox/Composer.jsx
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertCircle, CheckCircle2, Loader2, RotateCcw, Send, Sparkles, UserCheck, Zap } from "lucide-react";
@@ -8,10 +7,10 @@ import { filterLocalMacros } from "../../services/uiFormat.js";
 import { ChannelIcon } from "../../components/ChannelBadge.jsx";
 
 const DEST_LABEL = {
-  telegram: "Telegram (Kênh thật 2 chiều)",
-  shopee: "Shopee Chat (Mô phỏng)",
-  zalo: "Zalo OA (Mô phỏng)",
-  webchat: "Website LiveChat (Mô phỏng)",
+  telegram: "Telegram",
+  shopee: "Shopee Chat",
+  zalo: "Zalo OA",
+  webchat: "WebChat",
 };
 
 const FOCUS_TINT = {
@@ -132,8 +131,7 @@ export default function Composer({
     }
   }
 
-  const label =
-    ai && ai.source === "bedrock" ? "AI (Amazon Bedrock)" : ai ? "Gợi ý mẫu (AI chưa khả dụng)" : "";
+  const label = ai && ai.source === "bedrock" ? "AI (Amazon Bedrock)" : ai ? "Gợi ý mẫu" : "";
   const focusTint = FOCUS_TINT[conv.channel] || "focus-within:border-zinc-500 focus-within:ring-zinc-400/20";
   const draftLen = (draft || "").length;
   const filteredMacros = filterLocalMacros(QUICK_LOCAL_MACROS, draft);
@@ -145,7 +143,7 @@ export default function Composer({
         <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-800 dark:text-emerald-200">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-            <span>Hội thoại đã hoàn tất · Bạn vẫn có thể trả lời thêm hoặc bấm Mở lại (E).</span>
+            <span>Hội thoại đã hoàn tất · Bấm Mở lại (E) nếu cần tiếp tục.</span>
           </div>
           {onReopen && (
             <button
@@ -165,7 +163,7 @@ export default function Composer({
           <div className="flex min-w-0 items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">
-              Hội thoại đang do <b className="font-mono">{otherAssignee}</b> phụ trách — cân nhắc trước khi gửi.
+              Đang do <b className="font-mono">{otherAssignee}</b> phụ trách.
             </span>
           </div>
           {onTakeOver && (
@@ -200,7 +198,7 @@ export default function Composer({
             className="elevated-sheet mb-2 space-y-1.5 rounded-xl border border-zinc-200/90 bg-white p-2.5 shadow-xl dark:border-white/20 dark:bg-[#16161B]"
           >
             <div className="flex items-center justify-between font-mono text-[10px] text-zinc-400">
-              <span>Mẫu trả lời nhanh (Local — không phải AI) · ↑↓ Chọn · ↵ Chèn</span>
+              <span>Mẫu trả lời nhanh · ↑↓ Chọn · ↵ Chèn</span>
               <button
                 type="button"
                 onClick={() => setShowMacros(false)}
@@ -252,11 +250,9 @@ export default function Composer({
         </div>
       )}
 
-      {/* Floating Unified Composer Card */}
       <div
         className={`elevated-sheet rounded-2xl border border-zinc-200/90 bg-white transition focus-within:ring-2 dark:border-white/12 dark:bg-[#111114] ${focusTint}`}
       >
-        {/* Destination Indicator Strip */}
         <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-3.5 py-1.5 text-[11px] text-zinc-500 dark:border-white/[0.06] dark:text-zinc-400">
           <div className="flex min-w-0 items-center gap-1.5">
             <ChannelIcon channel={conv.channel} className="h-3.5 w-3.5 shrink-0" />
@@ -279,8 +275,8 @@ export default function Composer({
           maxLength={4000}
           placeholder={
             otherAssignee
-              ? `Đang do ${otherAssignee} phụ trách · Bấm 'Nhận lại' phía trên để gửi phản hồi…`
-              : `Nhập phản hồi gửi tới ${conv.customerName} (gõ / để mở mẫu nhanh)…`
+              ? `Bấm 'Nhận lại' để trả lời hội thoại này…`
+              : `Nhập phản hồi cho ${conv.customerName}…`
           }
           onChange={(e) => handleDraftInput(e.target.value)}
           onKeyDown={(e) => {
@@ -362,7 +358,7 @@ export default function Composer({
 
           <div className="flex items-center gap-2.5">
             <span className="hidden font-mono text-[10px] text-zinc-400 sm:inline">
-              Enter gửi · / mở mẫu nhanh
+              Enter gửi · / mẫu nhanh
             </span>
             <motion.button
               whileTap={{ scale: 0.97 }}
