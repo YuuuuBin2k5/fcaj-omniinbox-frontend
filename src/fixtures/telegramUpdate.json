@@ -1,0 +1,17 @@
+{
+  "update_id": 100000001,
+  "message": {
+    "message_id": 998877,
+    "date": 1732264200,
+    "chat": {
+      "id": 678901234,
+      "type": "private"
+    },
+    "from": {
+      "id": 678901234,
+      "first_name": "Văn A",
+      "last_name": "Nguyễn"
+    },
+    "text": "Shop ơi mẫu áo khoác này còn size L không ạ?"
+  }
+}

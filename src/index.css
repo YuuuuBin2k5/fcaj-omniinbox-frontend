@@ -1,0 +1,299 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    scroll-behavior: smooth;
+  }
+  code,
+  kbd,
+  pre,
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  ::selection {
+    background: rgba(24, 24, 27, 0.14);
+    color: inherit;
+  }
+  .dark ::selection {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+  }
+  :focus-visible {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
+  }
+}
+
+/* Nền lưới kiến trúc chuẩn bản vẽ kỹ thuật */
+.hero-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(113, 113, 122, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(113, 113, 122, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.dark .hero-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
+/* Nền dot-matrix tinh tế cho khung Chat & Empty State */
+.dot-canvas {
+  background-image: radial-gradient(rgba(24, 24, 27, 0.085) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.dark .dot-canvas {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Đổ bóng đa tầng chuẩn phần cứng cho Editorial Light & Specular edge cho Obsidian Dark */
+.elevated-sheet {
+  box-shadow:
+    0 1px 2px rgba(9, 9, 11, 0.05),
+    0 10px 26px -16px rgba(9, 9, 11, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.dark .elevated-sheet {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    0 14px 32px -18px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075);
+}
+
+/* Specular top highlight chuẩn phần cứng */
+.surface-specular {
+  box-shadow:
+    0 1px 2px rgba(9, 9, 11, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.dark .surface-specular {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* Dải sáng phản chiếu mảnh ở mép trên Sandbox Hero */
+.sandbox-rim {
+  position: relative;
+}
+.sandbox-rim::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.55), rgba(24, 24, 27, 0.25), transparent);
+}
+.dark .sandbox-rim::before {
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.65), rgba(255, 255, 255, 0.45), transparent);
+}
+
+/* Lớp kính mờ trung tính */
+.glass-panel {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Spotlight Card 2 lớp: ánh sáng bề mặt + chiếu sáng đường viền 1px theo trỏ chuột */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(24, 24, 27, 0.045),
+    rgba(14, 165, 233, 0.04) 44%,
+    transparent 74%
+  );
+}
+
+.dark .spotlight-card::before {
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.065),
+    rgba(56, 189, 248, 0.045) 42%,
+    transparent 74%
+  );
+}
+
+.spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  background: radial-gradient(
+    280px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(14, 165, 233, 0.45),
+    rgba(24, 24, 27, 0.18) 45%,
+    transparent 72%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.dark .spotlight-card::after {
+  background: radial-gradient(
+    280px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.45),
+    rgba(56, 189, 248, 0.38) 42%,
+    transparent 72%
+  );
+}
+
+.spotlight-card:hover::before,
+.spotlight-card:hover::after {
+  opacity: 1;
+}
+
+/* Bong bóng Outbound chuẩn Cobalt quang học */
+.bubble-outbound {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 2px 10px -2px rgba(29, 78, 216, 0.35);
+}
+
+.dark .bubble-outbound {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 16px -4px rgba(37, 99, 235, 0.45);
+}
+
+/* Phím cơ nổi (Keycap 3D tinh tế) */
+.kbd-cap {
+  box-shadow: 0 1.5px 0 rgba(24, 24, 27, 0.16);
+}
+.dark .kbd-cap {
+  box-shadow:
+    0 1.5px 0 rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Ẩn thanh cuộn phụ cho filter bar ngang */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Giữ layout ổn định khi có thanh cuộn dọc */
+.gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+/* Luồng dữ liệu chuyển động cho sơ đồ AWS */
+@keyframes pipelineFlow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pipeline-dash {
+  stroke-dasharray: 6 6;
+  animation: pipelineFlow 1.15s linear infinite;
+}
+
+@keyframes signalPulse {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(220%);
+    opacity: 0;
+  }
+}
+
+.signal-beam {
+  animation: signalPulse 0.85s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Scrollbar tinh gọn */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.55);
+}
+
+/* Lớp hạt quang học siêu mịn (inline SVG fractalNoise) chống bệt màu gradient */
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.028;
+}
+.dark .grain-overlay {
+  opacity: 0.04;
+}
+
+/* Cân bằng ngắt dòng tiêu đề chuẩn biên tập */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Vô hiệu hóa transition trong tích tắc đổi Sáng/Tối để tránh lệch màu từng khối */
+.theme-instant *,
+.theme-instant *::before,
+.theme-instant *::after {
+  transition-property: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-dash,
+  .signal-beam {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
